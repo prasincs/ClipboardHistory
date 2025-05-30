@@ -48,13 +48,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem.button {
-            // Try to load custom icon, fallback to SF Symbol
-            if let customIcon = NSImage(named: "MenuBarIcon") {
-                customIcon.isTemplate = true
-                button.image = customIcon
+            // Load custom menu bar icon
+            if let image = loadMenuBarIcon() {
+                image.isTemplate = true
+                image.size = NSSize(width: 18, height: 18)
+                button.image = image
             } else {
+                // Fallback to SF Symbol
                 button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Clipboard History")
             }
+            
             button.action = #selector(statusBarButtonClicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
@@ -232,5 +235,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case 0x6F: return .f12
         default: return nil
         }
+    }
+    
+    private func loadMenuBarIcon() -> NSImage? {
+        // Method 1: Direct file path
+        if let resourcePath = Bundle.main.path(forResource: "MenuBarIcon", ofType: "png"),
+           let image = NSImage(contentsOfFile: resourcePath) {
+            return image
+        }
+        
+        // Method 2: From Assets catalog
+        if let image = NSImage(named: "MenuBarIcon") {
+            return image
+        }
+        
+        // Method 3: Create programmatically if all else fails
+        return createMenuBarIcon()
+    }
+    
+    private func createMenuBarIcon() -> NSImage {
+        let size = NSSize(width: 22, height: 22)
+        let image = NSImage(size: size)
+        
+        image.lockFocus()
+        
+        // Draw a simple clipboard shape
+        let path = NSBezierPath()
+        
+        // Clipboard body
+        let bodyRect = NSRect(x: 4, y: 2, width: 14, height: 18)
+        path.append(NSBezierPath(roundedRect: bodyRect, xRadius: 2, yRadius: 2))
+        
+        // Clip
+        let clipRect = NSRect(x: 7, y: 17, width: 8, height: 4)
+        path.append(NSBezierPath(roundedRect: clipRect, xRadius: 1, yRadius: 1))
+        
+        NSColor.black.setFill()
+        path.fill()
+        
+        // Lines on clipboard
+        NSColor.white.setFill()
+        for i in 0..<3 {
+            let lineRect = NSRect(x: 6, y: 5 + CGFloat(i) * 4, width: 10 - CGFloat(i) * 2, height: 2)
+            NSBezierPath(roundedRect: lineRect, xRadius: 1, yRadius: 1).fill()
+        }
+        
+        image.unlockFocus()
+        image.isTemplate = true
+        
+        return image
     }
 }

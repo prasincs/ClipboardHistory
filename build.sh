@@ -33,6 +33,13 @@ if [ -d Assets.xcassets ]; then
     echo "Copied assets"
 fi
 
+# Copy menu bar icons directly
+if [ -f MenuBarIcon.png ]; then
+    cp MenuBarIcon.png ClipboardHistory.app/Contents/Resources/
+    cp MenuBarIcon@2x.png ClipboardHistory.app/Contents/Resources/
+    echo "Copied menu bar icons"
+fi
+
 echo "Build complete! The app is at ClipboardHistory.app"
 echo ""
 echo "To run the app:"

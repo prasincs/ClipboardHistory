@@ -1,89 +1,98 @@
 #!/usr/bin/env python3
 from PIL import Image, ImageDraw
 
-def create_menubar_icon():
-    # Create 22x22 icon for menu bar (template image)
-    size = 22
-    scale = 4  # Create at higher resolution then scale down
+def create_menubar_icon(size=22):
+    # Create icon at 4x scale for better quality
+    scale = 4
     img_size = size * scale
     
     img = Image.new('RGBA', (img_size, img_size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # Scale all coordinates by scale factor
+    # Scale helper
     def s(val):
-        return val * scale
+        return int(val * scale)
     
-    # Draw clipboard shape
-    # Body
-    clipboard_x = s(4)
-    clipboard_y = s(2)
-    clipboard_w = s(14)
-    clipboard_h = s(18)
+    # Draw a simpler, bolder clipboard design
+    # Main clipboard body
+    body_margin = s(3)
+    body_width = img_size - 2 * body_margin
+    body_height = int(body_width * 1.2)
+    body_y = (img_size - body_height) // 2 + s(1)
     
+    # Draw clipboard background
     draw.rounded_rectangle(
-        [clipboard_x, clipboard_y, clipboard_x + clipboard_w, clipboard_y + clipboard_h],
-        radius=s(2), fill=(0, 0, 0, 255)
+        [body_margin, body_y, body_margin + body_width, body_y + body_height],
+        radius=s(2), fill=(0, 0, 0, 255), width=0
     )
     
-    # Clip at top
-    clip_x = s(7)
-    clip_y = s(1)
-    clip_w = s(8)
-    clip_h = s(4)
+    # Draw clip at top
+    clip_width = body_width // 2
+    clip_height = s(5)
+    clip_x = body_margin + (body_width - clip_width) // 2
+    clip_y = body_y - s(2)
     
     draw.rounded_rectangle(
-        [clip_x, clip_y, clip_x + clip_w, clip_y + clip_h],
+        [clip_x, clip_y, clip_x + clip_width, clip_y + clip_height],
         radius=s(1), fill=(0, 0, 0, 255)
     )
     
-    # Hole in clip
-    hole_x = s(9)
-    hole_y = s(2)
-    hole_w = s(4)
-    hole_h = s(2)
+    # Draw hole in clip (white cutout)
+    hole_width = clip_width - s(4)
+    hole_height = s(2)
+    hole_x = clip_x + (clip_width - hole_width) // 2
+    hole_y = clip_y + s(1)
     
-    draw.rectangle(
-        [hole_x, hole_y, hole_x + hole_w, hole_y + hole_h],
-        fill=(0, 0, 0, 0)
+    draw.rounded_rectangle(
+        [hole_x, hole_y, hole_x + hole_width, hole_y + hole_height],
+        radius=s(1), fill=(255, 255, 255, 0)
     )
     
-    # Content lines (cut out from clipboard)
-    line_x = clipboard_x + s(2)
-    line_w = s(10)
-    line_h = s(1.5)
-    line_spacing = s(3)
+    # Draw content lines (white on black)
+    line_margin = s(2)
+    line_x = body_margin + line_margin
+    line_y = body_y + s(6)
+    line_height = s(1.5)
+    line_spacing = s(2.5)
     
-    for i in range(3):
-        y = clipboard_y + s(5) + i * line_spacing
-        width = line_w - i * s(2)  # Make lines progressively shorter
-        draw.rectangle(
-            [line_x, y, line_x + width, y + line_h],
-            fill=(0, 0, 0, 0)
+    # Three lines with decreasing width
+    line_widths = [body_width - 2 * line_margin, 
+                   body_width - 3 * line_margin,
+                   body_width - 4 * line_margin]
+    
+    for i, width in enumerate(line_widths):
+        y = line_y + i * line_spacing
+        draw.rounded_rectangle(
+            [line_x, y, line_x + width, y + line_height],
+            radius=s(0.5), fill=(255, 255, 255, 255)
         )
     
-    # Scale down to final size with antialiasing
-    img = img.resize((size, size), Image.Resampling.LANCZOS)
+    # Scale down with antialiasing
+    final_img = img.resize((size, size), Image.Resampling.LANCZOS)
     
-    # Create template versions (black pixels with varying alpha)
+    # Convert to template format (black with proper alpha)
     template = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     
+    # Process pixels for template image
     for x in range(size):
         for y in range(size):
-            r, g, b, a = img.getpixel((x, y))
+            r, g, b, a = final_img.getpixel((x, y))
             if a > 0:
-                # Convert to template format (black with alpha)
-                template.putpixel((x, y), (0, 0, 0, a))
+                # For template images, we want black pixels with alpha
+                # White areas become transparent
+                if r > 128:  # White pixels
+                    template.putpixel((x, y), (0, 0, 0, 0))
+                else:  # Black pixels
+                    template.putpixel((x, y), (0, 0, 0, a))
     
     return template
 
 # Create regular and @2x versions
-icon = create_menubar_icon()
+icon = create_menubar_icon(22)
 icon.save('MenuBarIcon.png')
 
 # Create @2x version
-icon_2x = create_menubar_icon()
-icon_2x = icon_2x.resize((44, 44), Image.Resampling.LANCZOS)
+icon_2x = create_menubar_icon(44)
 icon_2x.save('MenuBarIcon@2x.png')
 
 print("Menu bar icons created:")
