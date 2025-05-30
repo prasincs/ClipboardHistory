@@ -48,4 +48,65 @@ class ClipboardHistoryTests: XCTestCase {
         XCTAssertEqual(item1.content, item2.content)
         XCTAssertNotEqual(item1.content, item3.content)
     }
+    
+    func testPasswordMasking() {
+        let settings = Settings.shared
+        settings.maskPasswords = true
+        
+        let passwordItem = ClipboardItem(content: .text("MySecretPassword123!"), sourceApp: "1Password", isPassword: true)
+        let normalItem = ClipboardItem(content: .text("Normal text"), sourceApp: "TextEdit", isPassword: false)
+        
+        XCTAssertEqual(passwordItem.preview, "••••••••")
+        XCTAssertEqual(normalItem.preview, "Normal text")
+        
+        // Test masked content
+        switch passwordItem.maskedContent {
+        case .text(let maskedText):
+            XCTAssertEqual(maskedText, String(repeating: "•", count: 20))
+        case .image:
+            XCTFail("Expected text content")
+        }
+        
+        // Verify actual content is preserved
+        switch passwordItem.content {
+        case .text(let actualText):
+            XCTAssertEqual(actualText, "MySecretPassword123!")
+        case .image:
+            XCTFail("Expected text content")
+        }
+    }
+    
+    func testPasswordDetection() {
+        let manager = ClipboardManager.shared
+        
+        // Test various password patterns
+        XCTAssertTrue(manager.isLikelyPassword("MyP@ssw0rd123"))
+        XCTAssertTrue(manager.isLikelyPassword("SecurePass#2023"))
+        XCTAssertTrue(manager.isLikelyPassword("xK9$mN2@pL5"))
+        
+        // Test non-password patterns
+        XCTAssertFalse(manager.isLikelyPassword("hello world"))
+        XCTAssertFalse(manager.isLikelyPassword("simple"))
+        XCTAssertFalse(manager.isLikelyPassword("12345678"))
+        XCTAssertFalse(manager.isLikelyPassword("ALLCAPS"))
+    }
+    
+    func testExcludedApps() {
+        let settings = Settings.shared
+        
+        // Test default excluded apps
+        XCTAssertTrue(settings.excludedApps.contains("1Password"))
+        XCTAssertTrue(settings.excludedApps.contains("Bitwarden"))
+        
+        // Test adding new app
+        settings.excludedApps.insert("TestApp")
+        settings.saveSettings()
+        settings.loadSettings()
+        
+        XCTAssertTrue(settings.excludedApps.contains("TestApp"))
+        
+        // Clean up
+        settings.excludedApps.remove("TestApp")
+        settings.saveSettings()
+    }
 }

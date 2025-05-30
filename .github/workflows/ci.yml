@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test on macOS
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode.app
+    
+    - name: Swift version
+      run: swift --version
+    
+    - name: Build
+      run: make build
+    
+    - name: Run tests
+      run: make test
+    
+  release-build:
+    name: Release Build
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode.app
+    
+    - name: Build Release
+      run: make release
+    
+    - name: Upload App Bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: ClipboardHistory-macOS
+        path: ClipboardHistory.app
+        
+  lint:
+    name: SwiftLint
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install SwiftLint
+      run: brew install swiftlint
+    
+    - name: Run SwiftLint
+      run: make lint || true

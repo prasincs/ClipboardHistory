@@ -1,0 +1,56 @@
+disabled_rules:
+  - trailing_comma
+  - todo
+  - line_length
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_first_not_nil
+  - empty_string
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - multiline_parameters
+  - multiline_arguments
+  - number_separator
+  - operator_usage_whitespace
+  - overridden_super_call
+  - private_outlet
+  - prohibited_super_call
+  - redundant_nil_coalescing
+  - switch_case_on_newline
+  - yoda_condition
+
+excluded:
+  - .build
+  - ClipboardHistory.app
+  - Tests
+
+force_cast: error
+force_try: error
+
+type_body_length:
+  warning: 300
+  error: 500
+
+file_length:
+  warning: 500
+  error: 1000
+
+function_body_length:
+  warning: 50
+  error: 100
+
+identifier_name:
+  min_length:
+    warning: 2
+  max_length:
+    warning: 40
+    error: 50
+  excluded:
+    - id
+    - URL
+    - x
+    - y

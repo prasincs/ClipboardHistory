@@ -131,9 +131,16 @@ struct ClipboardItemRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 switch item.content {
                 case .text:
-                    Text(item.preview)
-                        .lineLimit(2)
-                        .font(.system(.body, design: .default))
+                    HStack(spacing: 8) {
+                        if item.isPassword {
+                            Image(systemName: "lock.fill")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                        }
+                        Text(item.preview)
+                            .lineLimit(2)
+                            .font(.system(.body, design: .default))
+                    }
                 case .image(let image):
                     HStack {
                         Image(nsImage: image)
@@ -146,9 +153,17 @@ struct ClipboardItemRow: View {
                     }
                 }
                 
-                Text(RelativeDateTimeFormatter().localizedString(for: item.timestamp, relativeTo: Date()))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 8) {
+                    if let sourceApp = item.sourceApp {
+                        Label(sourceApp, systemImage: "app")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Text(RelativeDateTimeFormatter().localizedString(for: item.timestamp, relativeTo: Date()))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
             
             Spacer()

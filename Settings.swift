@@ -7,9 +7,13 @@ class Settings: ObservableObject {
     
     @Published var hotKeyModifiers: NSEvent.ModifierFlags = [.control, .shift]
     @Published var hotKeyCode: UInt16 = 0x09 // 'v' key
+    @Published var excludedApps: Set<String> = ["1Password", "1Password 7", "Bitwarden", "LastPass", "Dashlane", "Keeper", "KeePassXC", "Enpass"]
+    @Published var maskPasswords: Bool = true
     
     private let hotKeyModifiersKey = "hotKeyModifiers"
     private let hotKeyCodeKey = "hotKeyCode"
+    private let excludedAppsKey = "excludedApps"
+    private let maskPasswordsKey = "maskPasswords"
     
     private init() {
         loadSettings()
@@ -23,11 +27,21 @@ class Settings: ObservableObject {
         if UserDefaults.standard.object(forKey: hotKeyCodeKey) != nil {
             hotKeyCode = UInt16(UserDefaults.standard.integer(forKey: hotKeyCodeKey))
         }
+        
+        if let savedApps = UserDefaults.standard.array(forKey: excludedAppsKey) as? [String] {
+            excludedApps = Set(savedApps)
+        }
+        
+        if UserDefaults.standard.object(forKey: maskPasswordsKey) != nil {
+            maskPasswords = UserDefaults.standard.bool(forKey: maskPasswordsKey)
+        }
     }
     
     func saveSettings() {
         UserDefaults.standard.set(hotKeyModifiers.rawValue, forKey: hotKeyModifiersKey)
         UserDefaults.standard.set(Int(hotKeyCode), forKey: hotKeyCodeKey)
+        UserDefaults.standard.set(Array(excludedApps), forKey: excludedAppsKey)
+        UserDefaults.standard.set(maskPasswords, forKey: maskPasswordsKey)
     }
     
     func getHotKeyString() -> String {

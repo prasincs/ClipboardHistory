@@ -30,15 +30,37 @@ class ClipboardManager: ObservableObject {
         if changeCount != lastChangeCount {
             lastChangeCount = changeCount
             
+            let sourceApp = getCurrentAppName()
+            let isFromExcludedApp = Settings.shared.excludedApps.contains(sourceApp ?? "")
+            
             if let string = pasteboard.string(forType: .string), !string.isEmpty {
-                addToHistory(string)
+                addToHistory(string, sourceApp: sourceApp, isPassword: isFromExcludedApp || isLikelyPassword(string))
             } else if let image = NSImage(pasteboard: pasteboard) {
-                addImageToHistory(image)
+                addImageToHistory(image, sourceApp: sourceApp)
             }
         }
     }
     
-    private func addToHistory(_ text: String) {
+    private func getCurrentAppName() -> String? {
+        return NSWorkspace.shared.frontmostApplication?.localizedName
+    }
+    
+    func isLikelyPassword(_ text: String) -> Bool {
+        // Check if text looks like a password
+        let hasUpperCase = text.range(of: "[A-Z]", options: .regularExpression) != nil
+        let hasLowerCase = text.range(of: "[a-z]", options: .regularExpression) != nil
+        let hasNumber = text.range(of: "[0-9]", options: .regularExpression) != nil
+        let hasSpecialChar = text.range(of: "[^A-Za-z0-9]", options: .regularExpression) != nil
+        let isReasonableLength = text.count >= 8 && text.count <= 128
+        let hasNoSpaces = !text.contains(" ")
+        let hasNoNewlines = !text.contains("\n")
+        
+        // Consider it a password if it has mixed characters and reasonable length
+        let mixedCharCount = [hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter { $0 }.count
+        return isReasonableLength && hasNoSpaces && hasNoNewlines && mixedCharCount >= 3
+    }
+    
+    private func addToHistory(_ text: String, sourceApp: String? = nil, isPassword: Bool = false) {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
         
@@ -51,7 +73,7 @@ class ClipboardManager: ObservableObject {
             clipboardHistory.remove(at: existingIndex)
         }
         
-        let newItem = ClipboardItem(content: .text(trimmedText))
+        let newItem = ClipboardItem(content: .text(trimmedText), sourceApp: sourceApp, isPassword: isPassword)
         clipboardHistory.insert(newItem, at: 0)
         
         if clipboardHistory.count > maxHistoryItems {
@@ -59,7 +81,7 @@ class ClipboardManager: ObservableObject {
         }
     }
     
-    private func addImageToHistory(_ image: NSImage) {
+    private func addImageToHistory(_ image: NSImage, sourceApp: String? = nil) {
         if let existingIndex = clipboardHistory.firstIndex(where: {
             if case .image = $0.content {
                 return true
@@ -69,7 +91,7 @@ class ClipboardManager: ObservableObject {
             clipboardHistory.remove(at: existingIndex)
         }
         
-        let newItem = ClipboardItem(content: .image(image))
+        let newItem = ClipboardItem(content: .image(image), sourceApp: sourceApp)
         clipboardHistory.insert(newItem, at: 0)
         
         if clipboardHistory.count > maxHistoryItems {
@@ -81,6 +103,7 @@ class ClipboardManager: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         
+        // Always paste the actual content, not masked
         switch item.content {
         case .text(let string):
             pasteboard.setString(string, forType: .string)
@@ -118,15 +141,38 @@ struct ClipboardItem: Identifiable {
     let id = UUID()
     let content: ClipboardContent
     let timestamp = Date()
+    let sourceApp: String?
+    let isPassword: Bool
+    
+    init(content: ClipboardContent, sourceApp: String? = nil, isPassword: Bool = false) {
+        self.content = content
+        self.sourceApp = sourceApp
+        self.isPassword = isPassword
+    }
     
     var preview: String {
         switch content {
         case .text(let string):
+            if isPassword && Settings.shared.maskPasswords {
+                return "••••••••"
+            }
             let lines = string.components(separatedBy: .newlines)
             let preview = lines.first ?? ""
             return String(preview.prefix(100))
         case .image:
             return "Image"
+        }
+    }
+    
+    var maskedContent: ClipboardContent {
+        switch content {
+        case .text(let string):
+            if isPassword && Settings.shared.maskPasswords {
+                return .text(String(repeating: "•", count: min(string.count, 20)))
+            }
+            return content
+        case .image:
+            return content
         }
     }
 }
