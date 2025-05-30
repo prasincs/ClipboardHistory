@@ -55,6 +55,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func setupMenu() {
+        // Don't set menu here, we'll create it on demand
+    }
+    
+    func createMenu() -> NSMenu {
         let menu = NSMenu()
         
         menu.addItem(NSMenuItem(title: "Show Clipboard History", action: #selector(showPopover), keyEquivalent: ""))
@@ -63,7 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
-        statusItem.menu = menu
+        return menu
     }
     
     func setupPopover() {
@@ -102,7 +106,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let event = NSApp.currentEvent!
         
         if event.type == .rightMouseUp {
-            statusItem.menu?.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
+            // Close popover if it's open
+            if popover.isShown {
+                popover.performClose(nil)
+            }
+            
+            // Show menu
+            let menu = createMenu()
+            statusItem.menu = menu
+            statusItem.button?.performClick(nil)
+            
+            // Remove menu after showing to allow left-click to work
+            DispatchQueue.main.async { [weak self] in
+                self?.statusItem.menu = nil
+            }
         } else {
             togglePopover()
         }
@@ -118,7 +135,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func showPopover() {
         if let button = statusItem.button {
-            statusItem.menu = nil
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }

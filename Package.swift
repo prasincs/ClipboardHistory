@@ -28,6 +28,11 @@ let package = Package(
                 "SettingsView.swift",
                 "HotKeyRecorderView.swift"
             ]
+        ),
+        .testTarget(
+            name: "ClipboardHistoryTests",
+            dependencies: ["ClipboardHistory"],
+            path: "Tests"
         )
     ]
 )
