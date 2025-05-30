@@ -48,7 +48,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Clipboard History")
+            // Try to load custom icon, fallback to SF Symbol
+            if let customIcon = NSImage(named: "MenuBarIcon") {
+                customIcon.isTemplate = true
+                button.image = customIcon
+            } else {
+                button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Clipboard History")
+            }
             button.action = #selector(statusBarButtonClicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }

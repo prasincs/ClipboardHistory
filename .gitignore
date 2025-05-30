@@ -121,3 +121,14 @@ ClipboardHistory.app/
 *.swiftmodule
 *.swiftdoc
 *.swiftsourceinfo
+
+# Generated icons
+AppIcon.iconset/
+AppIcon.png
+MenuBarIcon.png
+MenuBarIcon@2x.png
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

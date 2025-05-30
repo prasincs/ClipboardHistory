@@ -27,6 +27,9 @@ let package = Package(
                 "Settings.swift",
                 "SettingsView.swift",
                 "HotKeyRecorderView.swift"
+            ],
+            resources: [
+                .process("Assets.xcassets")
             ]
         ),
         .testTarget(
