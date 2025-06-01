@@ -1,6 +1,10 @@
 import SwiftUI
 import HotKey
 
+protocol PopoverDelegate: AnyObject {
+    func closePopover()
+}
+
 @main
 struct ClipboardHistoryApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -25,6 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var popover: NSPopover!
     var hotKey: HotKey?
     var settingsWindow: NSWindow?
+    var targetApplication: NSRunningApplication?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -83,7 +88,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover = NSPopover()
         popover.contentSize = NSSize(width: 400, height: 500)
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: ClipboardHistoryView())
+        popover.contentViewController = NSHostingController(rootView: ClipboardHistoryView(appDelegate: self))
     }
     
     func setupHotKey() {
@@ -143,6 +148,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func showPopover() {
+        // Store the current frontmost application before showing popover
+        targetApplication = NSWorkspace.shared.frontmostApplication
+        print("AppDelegate: Stored target application: \(targetApplication?.localizedName ?? "Unknown")")
+        
         if let button = statusItem.button {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
@@ -284,5 +293,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         image.isTemplate = true
         
         return image
+    }
+}
+
+extension AppDelegate: PopoverDelegate {
+    func closePopover() {
+        popover.performClose(nil)
     }
 }

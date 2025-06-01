@@ -4,6 +4,12 @@ struct ClipboardHistoryView: View {
     @ObservedObject var clipboardManager = ClipboardManager.shared
     @State private var searchText = ""
     @State private var selectedItemId: UUID?
+    let appDelegate: AppDelegate?
+    
+    init(appDelegate: AppDelegate? = nil) {
+        self.appDelegate = appDelegate
+        print("ClipboardHistoryView init with appDelegate: \(appDelegate != nil ? "Present" : "Nil")")
+    }
     
     var filteredItems: [ClipboardItem] {
         if searchText.isEmpty {
@@ -34,6 +40,7 @@ struct ClipboardHistoryView: View {
                                 isSelected: selectedItemId == item.id
                             )
                             .onTapGesture {
+                                print("Tap gesture recognized for item: \(item.preview)")
                                 selectAndPaste(item)
                             }
                             .onHover { isHovered in
@@ -73,8 +80,43 @@ struct ClipboardHistoryView: View {
     }
     
     private func selectAndPaste(_ item: ClipboardItem) {
-        clipboardManager.pasteItem(item)
-        NSApplication.shared.keyWindow?.close()
+        print("selectAndPaste called for item: \(item.preview)")
+        
+        // Try to get appDelegate from passed reference or from NSApp
+        let appDel = appDelegate ?? (NSApp.delegate as? AppDelegate)
+        
+        // Check if appDelegate is nil
+        guard let appDelegate = appDel else {
+            print("ERROR: Could not get appDelegate!")
+            // Still try to paste even without appDelegate
+            clipboardManager.pasteItem(item)
+            return
+        }
+        
+        // Get the target app before closing popover
+        let targetApp = appDelegate.targetApplication
+        print("Target app: \(targetApp?.localizedName ?? "None")")
+        
+        // Close the popover
+        appDelegate.popover.performClose(nil)
+        
+        // Paste to the target application
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            if let app = targetApp, app.bundleIdentifier != Bundle.main.bundleIdentifier {
+                // Activate the target app
+                print("Activating target app: \(app.localizedName ?? "Unknown")")
+                app.activate(options: [.activateIgnoringOtherApps])
+                
+                // Wait a bit more for the app to become active
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.clipboardManager.pasteItem(item)
+                }
+            } else {
+                // Direct paste if no target app
+                print("No target app, performing direct paste")
+                self.clipboardManager.pasteItem(item)
+            }
+        }
     }
     
     private func setupKeyboardShortcuts() {

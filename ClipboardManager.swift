@@ -100,6 +100,8 @@ class ClipboardManager: ObservableObject {
     }
     
     func pasteItem(_ item: ClipboardItem) {
+        print("ClipboardManager: Starting paste for item")
+        
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         
@@ -107,13 +109,25 @@ class ClipboardManager: ObservableObject {
         switch item.content {
         case .text(let string):
             pasteboard.setString(string, forType: .string)
+            print("ClipboardManager: Set text to pasteboard: \(string.prefix(50))...")
         case .image(let image):
             if let tiffData = image.tiffRepresentation {
                 pasteboard.setData(tiffData, forType: .tiff)
+                print("ClipboardManager: Set image to pasteboard")
             }
         }
         
         lastChangeCount = pasteboard.changeCount
+        
+        // Check if we have accessibility permissions
+        let trusted = AXIsProcessTrusted()
+        print("ClipboardManager: Accessibility permissions: \(trusted)")
+        
+        if !trusted {
+            print("ClipboardManager: Requesting accessibility permissions...")
+            let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary
+            AXIsProcessTrustedWithOptions(options)
+        }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.simulatePaste()
@@ -121,15 +135,103 @@ class ClipboardManager: ObservableObject {
     }
     
     private func simulatePaste() {
-        let source = CGEventSource(stateID: .hidSystemState)
+        print("ClipboardManager: simulatePaste called")
+        // Just perform the paste - app activation is handled in ClipboardHistoryView
+        performPaste()
+    }
+    
+    private func performPaste() {
+        print("ClipboardManager: performPaste called")
         
+        // Get the current pasteboard content
+        let pasteboard = NSPasteboard.general
+        
+        // Try direct insertion first for text content
+        if let string = pasteboard.string(forType: .string) {
+            print("ClipboardManager: Trying direct text insertion")
+            
+            // Try to insert text directly using accessibility API
+            if insertTextDirectly(string) {
+                print("ClipboardManager: Direct text insertion successful")
+                return
+            }
+        }
+        
+        // Try AppleScript method
+        let script = """
+            tell application "System Events"
+                keystroke "v" using command down
+            end tell
+        """
+        
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary?
+            appleScript.executeAndReturnError(&error)
+            
+            if let error = error {
+                print("ClipboardManager: AppleScript error: \(error)")
+                // Fall back to CGEvent method
+                performCGEventPaste()
+            } else {
+                print("ClipboardManager: AppleScript paste executed successfully")
+            }
+        } else {
+            print("ClipboardManager: Failed to create AppleScript, falling back to CGEvent")
+            performCGEventPaste()
+        }
+    }
+    
+    private func insertTextDirectly(_ text: String) -> Bool {
+        // Try to get the focused element
+        let systemWideElement = AXUIElementCreateSystemWide()
+        var focusedElement: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
+        
+        if result == .success, let element = focusedElement {
+            // Try to set the value directly
+            let setResult = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, text as CFTypeRef)
+            
+            if setResult == .success {
+                return true
+            }
+            
+            // If that fails, try to insert at the selection
+            var selectedTextRange: CFTypeRef?
+            let rangeResult = AXUIElementCopyAttributeValue(element as! AXUIElement, kAXSelectedTextRangeAttribute as CFString, &selectedTextRange)
+            
+            if rangeResult == .success {
+                // Insert text at current position
+                let insertResult = AXUIElementSetAttributeValue(element as! AXUIElement, kAXSelectedTextAttribute as CFString, text as CFTypeRef)
+                return insertResult == .success
+            }
+        }
+        
+        return false
+    }
+    
+    private func performCGEventPaste() {
+        print("ClipboardManager: Trying CGEvent paste method")
+        
+        let source = CGEventSource(stateID: .combinedSessionState)
+        source?.localEventsSuppressionInterval = 0.0
+        
+        // Create key down event for Cmd+V
         let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true)
         keyDown?.flags = .maskCommand
-        keyDown?.post(tap: .cghidEventTap)
         
+        // Create key up event
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false)
         keyUp?.flags = .maskCommand
-        keyUp?.post(tap: .cghidEventTap)
+        
+        // Post the events
+        let downResult = keyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        let upResult = keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        print("ClipboardManager: Key events posted - down: \(String(describing: downResult)), up: \(String(describing: upResult))")
+        
+        if downResult == nil || upResult == nil {
+            print("ClipboardManager: Failed to post key events - check accessibility permissions")
+        }
     }
     
     func clearHistory() {
