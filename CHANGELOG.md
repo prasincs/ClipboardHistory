@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-06-01
+
+### Fixed
+- Fixed paste functionality from menubar not working at cursor location
+- Resolved issue where clipboard items wouldn't paste to the target application
+- Fixed popover closure timing that was interfering with paste operations
+- Fixed weak reference issue that could cause appDelegate to become nil
+
+### Added
+- Comprehensive logging throughout paste process for better debugging
+- Multiple paste methods with intelligent fallback:
+  - Direct text insertion using Accessibility API (primary method)
+  - AppleScript keyboard simulation (secondary method)
+  - CGEvent keyboard simulation (fallback method)
+- Automatic accessibility permission checks and prompts
+- Target application tracking before popover display
+
+### Changed
+- Improved application activation sequence with proper delays
+- Enhanced popover management using delegate pattern
+- Better error handling for paste operations
+
 ## [1.0.0] - 2024-05-30
 
 ### Added
