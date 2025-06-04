@@ -99,7 +99,7 @@ class ClipboardManager: ObservableObject {
         }
     }
     
-    func pasteItem(_ item: ClipboardItem) {
+    func pasteItem(_ item: ClipboardItem, targetApp: NSRunningApplication? = nil) {
         print("ClipboardManager: Starting paste for item")
         
         let pasteboard = NSPasteboard.general
@@ -130,21 +130,112 @@ class ClipboardManager: ObservableObject {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.simulatePaste()
+            self.simulatePaste(targetApp: targetApp)
         }
     }
     
-    private func simulatePaste() {
+    private func simulatePaste(targetApp: NSRunningApplication? = nil) {
         print("ClipboardManager: simulatePaste called")
+        
+        // Check if we need special paste behavior
+        let pasteBehavior = getPasteBehaviorForApp(targetApp)
+        
         // Just perform the paste - app activation is handled in ClipboardHistoryView
-        performPaste()
+        performPaste(behavior: pasteBehavior)
     }
     
-    private func performPaste() {
-        print("ClipboardManager: performPaste called")
+    private func getPasteBehaviorForApp(_ app: NSRunningApplication?) -> PasteBehavior {
+        guard let app = app,
+              let bundleId = app.bundleIdentifier else {
+            return .normal
+        }
+        
+        // Check app-specific behaviors
+        for appBehavior in Settings.shared.appPasteBehaviors {
+            if appBehavior.appIdentifier == bundleId {
+                // If there's a URL pattern, check if current URL matches
+                if let urlPattern = appBehavior.urlPattern {
+                    if let currentURL = getCurrentBrowserURL(for: app) {
+                        if currentURL.contains(urlPattern) {
+                            return appBehavior.behavior
+                        }
+                    }
+                    // URL pattern doesn't match, use normal paste
+                    return .normal
+                } else {
+                    // No URL pattern required, use the behavior
+                    return appBehavior.behavior
+                }
+            }
+        }
+        
+        return .normal
+    }
+    
+    private func getCurrentBrowserURL(for app: NSRunningApplication) -> String? {
+        // Use AppleScript to get the current URL from the browser
+        var script = ""
+        
+        switch app.bundleIdentifier {
+        case "com.google.Chrome":
+            script = """
+                tell application "Google Chrome"
+                    if (count of windows) > 0 then
+                        return URL of active tab of front window
+                    end if
+                end tell
+            """
+        case "com.apple.Safari":
+            script = """
+                tell application "Safari"
+                    if (count of documents) > 0 then
+                        return URL of front document
+                    end if
+                end tell
+            """
+        case "org.mozilla.firefox":
+            script = """
+                tell application "Firefox"
+                    if (count of windows) > 0 then
+                        return URL of front window
+                    end if
+                end tell
+            """
+        default:
+            return nil
+        }
+        
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary?
+            let result = appleScript.executeAndReturnError(&error)
+            
+            if error == nil {
+                return result.stringValue
+            }
+        }
+        
+        return nil
+    }
+    
+    private func performPaste(behavior: PasteBehavior = .normal) {
+        print("ClipboardManager: performPaste called with behavior: \(behavior)")
         
         // Get the current pasteboard content
         let pasteboard = NSPasteboard.general
+        
+        // Check if this is a URL for Google Docs link behavior
+        var isURL = false
+        if behavior == .googleDocsLink, let string = pasteboard.string(forType: .string) {
+            let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+            isURL = trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://")
+            
+            // If it's not a URL, fall back to normal paste
+            if !isURL {
+                print("ClipboardManager: Content is not a URL, using normal paste")
+                performPaste(behavior: .normal)
+                return
+            }
+        }
         
         // Try direct insertion first for text content
         if let string = pasteboard.string(forType: .string) {
@@ -171,13 +262,33 @@ class ClipboardManager: ObservableObject {
             if let error = error {
                 print("ClipboardManager: AppleScript error: \(error)")
                 // Fall back to CGEvent method
-                performCGEventPaste()
+                performCGEventPaste(behavior: behavior)
             } else {
                 print("ClipboardManager: AppleScript paste executed successfully")
+                
+                // If Google Docs link behavior and content is a URL, send Cmd+K after paste
+                if behavior == .googleDocsLink, let string = pasteboard.string(forType: .string) {
+                    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            self.performGoogleDocsLinkCommand()
+                        }
+                    }
+                }
             }
         } else {
             print("ClipboardManager: Failed to create AppleScript, falling back to CGEvent")
             performCGEventPaste()
+            
+            // If Google Docs link behavior and content is a URL, send Cmd+K after paste
+            if behavior == .googleDocsLink, let string = pasteboard.string(forType: .string) {
+                let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.performGoogleDocsLinkCommand()
+                    }
+                }
+            }
         }
     }
     
@@ -209,7 +320,7 @@ class ClipboardManager: ObservableObject {
         return false
     }
     
-    private func performCGEventPaste() {
+    private func performCGEventPaste(behavior: PasteBehavior = .normal) {
         print("ClipboardManager: Trying CGEvent paste method")
         
         let source = CGEventSource(stateID: .combinedSessionState)
@@ -232,6 +343,132 @@ class ClipboardManager: ObservableObject {
         if downResult == nil || upResult == nil {
             print("ClipboardManager: Failed to post key events - check accessibility permissions")
         }
+        
+        // If Google Docs link behavior and content is a URL, send Cmd+K after paste
+        if behavior == .googleDocsLink {
+            let pasteboard = NSPasteboard.general
+            if let string = pasteboard.string(forType: .string) {
+                let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.performGoogleDocsLinkCommand()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func performGoogleDocsLinkCommand() {
+        print("ClipboardManager: Preparing Google Docs link command")
+        
+        // Get the URL text to know how many characters to select
+        let pasteboard = NSPasteboard.general
+        guard let urlString = pasteboard.string(forType: .string) else {
+            print("ClipboardManager: No string in pasteboard")
+            return
+        }
+        
+        let trimmedURL = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let charCount = trimmedURL.count
+        
+        // Select the text we just pasted by using Shift+Left Arrow for the number of characters
+        let selectScript = """
+            tell application "System Events"
+                key down shift
+                repeat \(charCount) times
+                    key code 123
+                end repeat
+                key up shift
+            end tell
+        """
+        
+        if let selectScript = NSAppleScript(source: selectScript) {
+            var error: NSDictionary?
+            selectScript.executeAndReturnError(&error)
+            
+            if let error = error {
+                print("ClipboardManager: Failed to select text: \(error)")
+                // Try CGEvent method
+                performCGEventSelectText(charCount: charCount)
+            } else {
+                print("ClipboardManager: Selected pasted text (\(charCount) characters)")
+            }
+        } else {
+            performCGEventSelectText(charCount: charCount)
+        }
+        
+        // Wait a bit for the selection to complete
+        Thread.sleep(forTimeInterval: 0.1)
+        
+        // Now send Cmd+K
+        let linkScript = """
+            tell application "System Events"
+                keystroke "k" using command down
+            end tell
+        """
+        
+        if let appleScript = NSAppleScript(source: linkScript) {
+            var error: NSDictionary?
+            appleScript.executeAndReturnError(&error)
+            
+            if let error = error {
+                print("ClipboardManager: AppleScript Cmd+K error: \(error)")
+                // Fall back to CGEvent method
+                performCGEventCmdK()
+            } else {
+                print("ClipboardManager: AppleScript Cmd+K executed successfully")
+            }
+        } else {
+            performCGEventCmdK()
+        }
+    }
+    
+    private func performCGEventSelectText(charCount: Int) {
+        print("ClipboardManager: Selecting \(charCount) characters with CGEvent")
+        
+        let source = CGEventSource(stateID: .combinedSessionState)
+        source?.localEventsSuppressionInterval = 0.0
+        
+        // Hold Shift key down
+        let shiftDown = CGEvent(keyboardEventSource: source, virtualKey: 0x38, keyDown: true)
+        shiftDown?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        // Press Left Arrow for each character
+        for _ in 0..<charCount {
+            let leftArrowDown = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: true)
+            leftArrowDown?.flags = .maskShift
+            leftArrowDown?.post(tap: .cgAnnotatedSessionEventTap)
+            
+            let leftArrowUp = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: false)
+            leftArrowUp?.flags = .maskShift
+            leftArrowUp?.post(tap: .cgAnnotatedSessionEventTap)
+            
+            // Small delay between keypresses
+            Thread.sleep(forTimeInterval: 0.001)
+        }
+        
+        // Release Shift key
+        let shiftUp = CGEvent(keyboardEventSource: source, virtualKey: 0x38, keyDown: false)
+        shiftUp?.post(tap: .cgAnnotatedSessionEventTap)
+    }
+    
+    private func performCGEventCmdK() {
+        print("ClipboardManager: Trying CGEvent Cmd+K method")
+        
+        let source = CGEventSource(stateID: .combinedSessionState)
+        source?.localEventsSuppressionInterval = 0.0
+        
+        // Create key down event for Cmd+K (0x28 is 'k')
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x28, keyDown: true)
+        keyDown?.flags = .maskCommand
+        
+        // Create key up event
+        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x28, keyDown: false)
+        keyUp?.flags = .maskCommand
+        
+        // Post the events
+        keyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        keyUp?.post(tap: .cgAnnotatedSessionEventTap)
     }
     
     func clearHistory() {

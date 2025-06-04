@@ -2,6 +2,22 @@ import Foundation
 import AppKit
 import HotKey
 
+enum PasteBehavior: String, CaseIterable, Codable {
+    case normal = "Normal Paste"
+    case googleDocsLink = "Paste as Link (Cmd+K)"
+    
+    var description: String {
+        return self.rawValue
+    }
+}
+
+struct AppPasteBehavior: Codable {
+    let appIdentifier: String
+    let appName: String
+    let urlPattern: String?
+    let behavior: PasteBehavior
+}
+
 class Settings: ObservableObject {
     static let shared = Settings()
     
@@ -9,11 +25,20 @@ class Settings: ObservableObject {
     @Published var hotKeyCode: UInt16 = 0x09 // 'v' key
     @Published var excludedApps: Set<String> = ["1Password", "1Password 7", "Bitwarden", "LastPass", "Dashlane", "Keeper", "KeePassXC", "Enpass"]
     @Published var maskPasswords: Bool = true
+    @Published var appPasteBehaviors: [AppPasteBehavior] = [
+        AppPasteBehavior(
+            appIdentifier: "com.google.Chrome",
+            appName: "Google Chrome",
+            urlPattern: "docs.google.com",
+            behavior: .googleDocsLink
+        )
+    ]
     
     private let hotKeyModifiersKey = "hotKeyModifiers"
     private let hotKeyCodeKey = "hotKeyCode"
     private let excludedAppsKey = "excludedApps"
     private let maskPasswordsKey = "maskPasswords"
+    private let appPasteBehaviorsKey = "appPasteBehaviors"
     
     private init() {
         loadSettings()
@@ -35,6 +60,11 @@ class Settings: ObservableObject {
         if UserDefaults.standard.object(forKey: maskPasswordsKey) != nil {
             maskPasswords = UserDefaults.standard.bool(forKey: maskPasswordsKey)
         }
+        
+        if let data = UserDefaults.standard.data(forKey: appPasteBehaviorsKey),
+           let behaviors = try? JSONDecoder().decode([AppPasteBehavior].self, from: data) {
+            appPasteBehaviors = behaviors
+        }
     }
     
     func saveSettings() {
@@ -42,6 +72,10 @@ class Settings: ObservableObject {
         UserDefaults.standard.set(Int(hotKeyCode), forKey: hotKeyCodeKey)
         UserDefaults.standard.set(Array(excludedApps), forKey: excludedAppsKey)
         UserDefaults.standard.set(maskPasswords, forKey: maskPasswordsKey)
+        
+        if let data = try? JSONEncoder().encode(appPasteBehaviors) {
+            UserDefaults.standard.set(data, forKey: appPasteBehaviorsKey)
+        }
     }
     
     func getHotKeyString() -> String {

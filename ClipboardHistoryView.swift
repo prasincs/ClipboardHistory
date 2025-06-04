@@ -109,7 +109,7 @@ struct ClipboardHistoryView: View {
                 
                 // Wait a bit more for the app to become active
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    self.clipboardManager.pasteItem(item)
+                    self.clipboardManager.pasteItem(item, targetApp: app)
                 }
             } else {
                 // Direct paste if no target app
