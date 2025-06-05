@@ -4,7 +4,25 @@ set -e
 # Distance-based release script
 # Format: MAJOR.MINOR.PATCH where PATCH = last_patch + commits_since_last_tag
 # Example: v1.0.4 + 2 commits = v1.0.6
-# This script only creates the tag - CI will handle the actual release
+# 
+# Usage: ./release.sh [--push]
+#   --push: Automatically push the tag to origin after creating it
+
+# Parse command line arguments
+PUSH_TAG=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --push)
+            PUSH_TAG=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--push]"
+            exit 1
+            ;;
+    esac
+done
 
 # Get the last tag
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
@@ -44,6 +62,16 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
+# Check if tag already exists
+if git rev-parse $NEW_VERSION >/dev/null 2>&1; then
+    echo "Error: Tag $NEW_VERSION already exists!"
+    echo "This might happen if the release script was run but the tag wasn't pushed."
+    echo ""
+    echo "To push the existing tag, run:"
+    echo "  git push origin $NEW_VERSION"
+    exit 1
+fi
+
 # Create tag
 echo "Creating tag $NEW_VERSION..."
 git tag -a $NEW_VERSION -m "Release $NEW_VERSION
@@ -51,9 +79,23 @@ git tag -a $NEW_VERSION -m "Release $NEW_VERSION
 Incremental release: $DISTANCE commits since $LAST_TAG"
 
 echo "Tag $NEW_VERSION created successfully!"
-echo ""
-echo "To push the tag and trigger CI release, run:"
-echo "  git push origin $NEW_VERSION"
-echo ""
-echo "Or to push all commits and tags:"
-echo "  git push origin main --tags"
+
+# Push the tag if requested
+if [ "$PUSH_TAG" = true ]; then
+    echo ""
+    echo "Pushing tag to origin..."
+    git push origin $NEW_VERSION
+    echo "Tag pushed successfully!"
+    echo ""
+    echo "The CI release should start automatically."
+else
+    echo ""
+    echo "To push the tag and trigger CI release, run:"
+    echo "  git push origin $NEW_VERSION"
+    echo ""
+    echo "Or to push all commits and tags:"
+    echo "  git push origin main --tags"
+    echo ""
+    echo "Or run this script again with --push:"
+    echo "  ./release.sh --push"
+fi
