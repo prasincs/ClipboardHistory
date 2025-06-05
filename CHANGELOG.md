@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.12] - 2025-06-05
+
 ### Security
 - **Supply Chain Hardening**: Comprehensive protection against dependency attacks
   - Pin dependencies to exact versions instead of version ranges
