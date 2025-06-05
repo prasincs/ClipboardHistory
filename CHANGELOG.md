@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.9] - 2025-06-05
+
 ### Fixed
 - Fixed distance-based versioning to correctly add commit count instead of incrementing by 1
 
