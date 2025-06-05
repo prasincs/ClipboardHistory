@@ -21,6 +21,8 @@ struct ClipboardHistoryApp: App {
                 }
             }
         }
+        .defaultSize(width: 0, height: 0)
+        .windowResizability(.contentSize)
     }
 }
 
@@ -33,6 +35,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        
+        // Hide all windows on launch
+        for window in NSApp.windows {
+            window.close()
+        }
         
         setupStatusBar()
         setupPopover()
@@ -47,6 +54,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .hotKeyChanged,
             object: nil
         )
+        
+        // Show first launch alert if needed
+        checkFirstLaunch()
     }
     
     func setupStatusBar() {
@@ -293,6 +303,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         image.isTemplate = true
         
         return image
+    }
+    
+    private func checkFirstLaunch() {
+        let hasLaunchedKey = "hasLaunchedBefore"
+        let hasLaunched = UserDefaults.standard.bool(forKey: hasLaunchedKey)
+        
+        if !hasLaunched {
+            UserDefaults.standard.set(true, forKey: hasLaunchedKey)
+            
+            // Show welcome alert
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                let alert = NSAlert()
+                alert.messageText = "Welcome to Clipboard History!"
+                alert.informativeText = """
+                Clipboard History runs in your menu bar and monitors your clipboard.
+                
+                Use \(Settings.shared.getHotKeyString()) to show your clipboard history.
+                
+                You can access settings by right-clicking the menu bar icon.
+                """
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "Got it!")
+                alert.runModal()
+            }
+        }
     }
 }
 

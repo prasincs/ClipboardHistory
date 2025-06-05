@@ -184,6 +184,18 @@ struct SettingsView: View {
                     Text("A simple clipboard manager for macOS")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                    
+                    #if DEBUG
+                    Divider()
+                    
+                    Button("Reset First Launch") {
+                        UserDefaults.standard.set(false, forKey: "hasLaunchedBefore")
+                        showingAlert = true
+                        alertMessage = "First launch flag has been reset. Restart the app to see the welcome message."
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.orange)
+                    #endif
                 }
                 .padding(.vertical, 8)
             }
