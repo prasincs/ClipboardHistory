@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed distance-based versioning to correctly add commit count instead of incrementing by 1
+
+### Added
+- Added `--push` option to release script for automatic tag pushing
+- Added duplicate tag prevention with helpful error messages
+
+## [1.0.5] - 2025-06-05
+
+### Fixed
+- Fixed empty window appearing on launch for menu bar app
+- Fixed URLs being incorrectly identified as passwords and masked in clipboard history
+
+### Added
+- First-time user onboarding with welcome message explaining:
+  - App runs in menu bar
+  - Keyboard shortcut to show clipboard history
+  - How to access settings via right-click
+- Debug option to reset first launch flag (debug builds only)
+
+## [1.0.4] - 2025-06-04
+
+### Added
+- Configurable app-specific paste behaviors
+- Google Docs link paste support (automatically converts URLs to links with Cmd+K)
+- Settings UI for configuring paste behaviors per application
+- URL pattern matching for context-aware paste behaviors
+- Automatic text selection before link creation in Google Docs
+
+### Changed
+- Only applies Google Docs link behavior when clipboard contains URLs (http:// or https://)
+- Improved text selection to only select pasted content instead of entire document
+
+## [1.0.3] - 2025-06-01
+
+### Changed
+- Modified release script to only create tags without pushing (CI handles releases)
+
+## [1.0.2] - 2025-06-01
+
+### Added
+- Changelog file with historical release notes
+- Distance-based release script for automated versioning
+
 ## [1.0.1] - 2025-06-01
 
 ### Fixed
