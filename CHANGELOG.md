@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Supply Chain Hardening**: Comprehensive protection against dependency attacks
+  - Pin dependencies to exact versions instead of version ranges
+  - Add cryptographic checksum verification for all dependencies
+  - Implement automated dependency vulnerability scanning
+- **CI/CD Security**: Multi-layer security validation pipeline
+  - Secret detection with Gitleaks to prevent credential leaks
+  - Dependency review for all pull requests
+  - Mandatory security checks before any builds or releases
+- **Development Security**: Security-first development workflow
+  - Pre-commit hooks with security validation
+  - Security checklist for contributors
+  - Automated security scanning on every commit
+
+### Added
+- **Security Policy**: Complete SECURITY.md with vulnerability reporting process
+- **Dependency Verification**: `scripts/verify-dependencies.sh` for checksum validation
+- **Security Tools**: Gitleaks configuration and Dependabot setup
+- **Make Targets**: `make security` and `make verify-deps` commands
+- **Documentation**: Comprehensive security information in README
+
+### Changed
+- **Release Process**: Security checks now required before creating releases
+- **Git Hooks**: Pre-commit hooks include security validation
+- **CI Workflow**: Security job must pass before other CI jobs run
+- **Package Management**: HotKey dependency pinned to exact version 0.2.1
+
 ## [v1.0.9] - 2025-06-05
 
 ### Fixed
