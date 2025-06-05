@@ -46,6 +46,13 @@ class ClipboardManager: ObservableObject {
     }
     
     func isLikelyPassword(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Don't treat URLs as passwords
+        if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+            return false
+        }
+        
         // Check if text looks like a password
         let hasUpperCase = text.range(of: "[A-Z]", options: .regularExpression) != nil
         let hasLowerCase = text.range(of: "[a-z]", options: .regularExpression) != nil
