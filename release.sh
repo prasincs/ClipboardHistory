@@ -62,6 +62,57 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
+# Check if CHANGELOG.md has been updated
+echo "Checking CHANGELOG.md..."
+if ! grep -q "## \[Unreleased\]" CHANGELOG.md; then
+    echo "Error: CHANGELOG.md is missing [Unreleased] section"
+    exit 1
+fi
+
+# Check if there are entries under [Unreleased]
+UNRELEASED_LINE=$(grep -n "## \[Unreleased\]" CHANGELOG.md | cut -d: -f1)
+NEXT_SECTION_LINE=$(tail -n +$((UNRELEASED_LINE + 1)) CHANGELOG.md | grep -n "^## \[" | head -1 | cut -d: -f1)
+
+if [ -z "$NEXT_SECTION_LINE" ]; then
+    # No next section found, check until end of file
+    CHANGELOG_CONTENT=$(tail -n +$((UNRELEASED_LINE + 1)) CHANGELOG.md)
+else
+    # Check content between Unreleased and next section
+    CHANGELOG_CONTENT=$(sed -n "$((UNRELEASED_LINE + 1)),$((UNRELEASED_LINE + NEXT_SECTION_LINE - 1))p" CHANGELOG.md)
+fi
+
+# Remove empty lines and check if there's actual content
+CHANGELOG_CONTENT_TRIMMED=$(echo "$CHANGELOG_CONTENT" | grep -v "^[[:space:]]*$" | grep -v "^#")
+
+if [ -z "$CHANGELOG_CONTENT_TRIMMED" ]; then
+    echo "Error: No changes documented in [Unreleased] section of CHANGELOG.md"
+    echo ""
+    echo "Please update CHANGELOG.md with:"
+    echo "  - A description of changes since $LAST_TAG"
+    echo "  - Categorize changes as: Added, Changed, Fixed, Deprecated, Removed, Security"
+    echo ""
+    echo "Example:"
+    echo "  ## [Unreleased]"
+    echo "  "
+    echo "  ### Added"
+    echo "  - New feature description"
+    echo "  "
+    echo "  ### Fixed"
+    echo "  - Bug fix description"
+    exit 1
+fi
+
+echo "✓ CHANGELOG.md has unreleased changes documented"
+echo ""
+echo "Release Summary:"
+echo "================"
+echo "Version: $LAST_TAG → $NEW_VERSION ($DISTANCE commits)"
+echo ""
+echo "Changes to be released:"
+echo "$CHANGELOG_CONTENT_TRIMMED" | sed 's/^/  /'
+echo "================"
+echo ""
+
 # Check if tag already exists
 if git rev-parse $NEW_VERSION >/dev/null 2>&1; then
     echo "Error: Tag $NEW_VERSION already exists!"
@@ -71,6 +122,42 @@ if git rev-parse $NEW_VERSION >/dev/null 2>&1; then
     echo "  git push origin $NEW_VERSION"
     exit 1
 fi
+
+# Update CHANGELOG.md - move Unreleased content to new version
+echo "Updating CHANGELOG.md..."
+TODAY=$(date +%Y-%m-%d)
+
+# Create a temporary file with updated changelog
+{
+    # Copy everything up to and including [Unreleased]
+    sed -n '1,/## \[Unreleased\]/p' CHANGELOG.md
+    
+    # Add empty line after [Unreleased]
+    echo ""
+    
+    # Add new version header
+    echo "## [$NEW_VERSION] - $TODAY"
+    
+    # Copy unreleased content (everything between [Unreleased] and next section)
+    if [ -z "$NEXT_SECTION_LINE" ]; then
+        # No next section, copy to end of file
+        tail -n +$((UNRELEASED_LINE + 1)) CHANGELOG.md
+    else
+        # Copy content between Unreleased and next section
+        sed -n "$((UNRELEASED_LINE + 1)),$((UNRELEASED_LINE + NEXT_SECTION_LINE - 1))p" CHANGELOG.md
+        # Copy everything from the next section onwards
+        tail -n +$((UNRELEASED_LINE + NEXT_SECTION_LINE)) CHANGELOG.md
+    fi
+} > CHANGELOG.md.tmp
+
+# Replace the original file
+mv CHANGELOG.md.tmp CHANGELOG.md
+
+# Commit the changelog update
+git add CHANGELOG.md
+git commit -m "Update CHANGELOG.md for $NEW_VERSION release"
+
+echo "✓ CHANGELOG.md updated with version $NEW_VERSION"
 
 # Create tag
 echo "Creating tag $NEW_VERSION..."
@@ -83,17 +170,21 @@ echo "Tag $NEW_VERSION created successfully!"
 # Push the tag if requested
 if [ "$PUSH_TAG" = true ]; then
     echo ""
-    echo "Pushing tag to origin..."
+    echo "Pushing changes and tag to origin..."
+    # Push the changelog commit first
+    git push origin main
+    # Then push the tag
     git push origin $NEW_VERSION
-    echo "Tag pushed successfully!"
+    echo "Changes and tag pushed successfully!"
     echo ""
     echo "The CI release should start automatically."
 else
     echo ""
-    echo "To push the tag and trigger CI release, run:"
+    echo "Changes committed locally. To push everything, run:"
+    echo "  git push origin main"
     echo "  git push origin $NEW_VERSION"
     echo ""
-    echo "Or to push all commits and tags:"
+    echo "Or to push all commits and tags at once:"
     echo "  git push origin main --tags"
     echo ""
     echo "Or run this script again with --push:"
