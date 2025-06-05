@@ -7,17 +7,42 @@
 
 A simple, secure, and customizable clipboard history manager for macOS with automatic password protection.
 
+## What's New (v1.0.9)
+
+- **Smart Google Docs Integration**: Automatically convert URLs to clickable links when pasting in Google Docs
+- **App-Specific Paste Behaviors**: Configure custom paste actions for different applications
+- **Improved URL Handling**: URLs are no longer mistakenly identified as passwords
+- **Better First Launch Experience**: Clean menu bar app with helpful onboarding
+- **Enhanced Release Process**: Automated versioning with required changelog updates
+
+See [CHANGELOG.md](CHANGELOG.md) for full release history.
+
 ## Features
 
+### Core Features
 - **Clipboard Monitoring**: Automatically captures text and images copied to clipboard
 - **History Storage**: Stores up to 50 recent clipboard items
-- **Customizable Hotkey**: Default is Ctrl+Shift+V, but can be changed in Settings
-- **Search**: Search through clipboard history
-- **Keyboard Navigation**: Use number keys (1-9) to quickly paste items
-- **Menu Bar Icon**: Access clipboard history from the menu bar
-- **Password Protection**: Automatically masks content from password managers
+- **Menu Bar App**: Runs discreetly in your menu bar without cluttering the dock
+- **First Launch Onboarding**: Welcome message on first run explaining how to use the app
+
+### Accessibility & Navigation
+- **Customizable Hotkey**: Default is Ctrl+Shift+V, fully customizable in Settings
+- **Search**: Instantly search through clipboard history
+- **Keyboard Navigation**: Press 1-9 to quickly paste items
+- **Visual Feedback**: Items show preview text and source application
+
+### Smart Paste Features
+- **App-Specific Behaviors**: Configure custom paste behaviors for different applications
+- **Google Docs Integration**: Automatically converts URLs to clickable links when pasting in Google Docs
+- **Context-Aware**: Detects both application and current URL for intelligent paste behavior
+- **Multiple Paste Methods**: Fallback strategies ensure paste works across all applications
+
+### Privacy & Security
+- **Password Protection**: Automatically masks content from password managers (1Password, Bitwarden, etc.)
+- **Smart Password Detection**: Identifies password-like strings but excludes URLs
 - **Privacy Settings**: Configure which apps should have their content masked
-- **Smart Password Detection**: Automatically detects and masks likely passwords
+- **Secure Pasting**: Masked passwords are pasted with their actual values
+- **Local Storage Only**: All data stays on your machine, no external connections
 
 ## Building from Source
 
@@ -51,6 +76,16 @@ After building:
 3. Grant accessibility permissions when prompted (required for global hotkey)
 4. The app will appear in your menu bar
 
+## Quick Start
+
+1. **Look for the clipboard icon** in your menu bar (top-right of screen)
+2. **Copy something** - The app automatically captures it
+3. **Press Ctrl+Shift+V** to see your clipboard history
+4. **Click any item** or press its number (1-9) to paste it
+5. **Right-click the menu bar icon** for settings and options
+
+That's it! The app runs quietly in the background, keeping your clipboard history safe and accessible.
+
 ## Usage
 
 - **Ctrl+Shift+V** (or custom hotkey): Show clipboard history popup
@@ -63,15 +98,32 @@ After building:
 
 ## Settings
 
-Access Settings by right-clicking the menu bar icon and selecting "Settings..." or pressing Cmd+,
+Access Settings by right-clicking the menu bar icon and selecting "Settings..."
 
-- **Keyboard Shortcut**: Click the recorder field and press your desired key combination
-- **Privacy & Security**: 
-  - Toggle password masking on/off
-  - Manage list of excluded applications (content from these apps will be masked)
-  - Default excluded apps include: 1Password, Bitwarden, LastPass, etc.
+### Keyboard Shortcut
+- Click the recorder field and press your desired key combination
+- The app will show the current shortcut (e.g., ⌃⇧V)
+
+### Privacy & Security
+- **Mask Passwords**: Toggle automatic password masking on/off
+- **Excluded Applications**: Manage apps whose content will be masked
+  - Default includes: 1Password, Bitwarden, LastPass, Dashlane, Keeper, KeePassXC, Enpass
+  - Add custom apps by typing the app name
+
+### App-Specific Paste Behaviors
+- Configure special paste behaviors for specific applications
+- **Google Docs Link Paste**: Automatically converts URLs to clickable links
+  - Only applies when pasting URLs (http:// or https://)
+  - Works with Chrome, Safari, Firefox, Edge, and Arc
+  - Can require specific URL patterns (e.g., docs.google.com)
+
+### Clipboard History
+- View current storage limit (50 items)
 - **Clear History**: Remove all items from clipboard history
-- **About**: View app version information
+
+### About
+- View app version and information
+- Quick access to app description
 
 ## Privacy Features
 
@@ -89,9 +141,32 @@ Grant these permissions in System Preferences > Security & Privacy > Privacy.
 
 ## Troubleshooting
 
-1. **Hotkey not working**: Make sure accessibility permissions are granted
-2. **App not launching**: Check Security & Privacy settings and allow the app
-3. **No clipboard history**: Start copying items - the app will capture them automatically
+### Common Issues
+
+1. **Hotkey not working**
+   - Ensure accessibility permissions are granted in System Settings > Privacy & Security > Accessibility
+   - Try setting a different hotkey combination in Settings
+   - Restart the app after granting permissions
+
+2. **App not launching**
+   - Check System Settings > Privacy & Security and allow the app
+   - If you see "damaged" warning, right-click the app and select Open
+   - Build from source if downloaded version doesn't work
+
+3. **No clipboard history**
+   - Start copying items - the app captures them automatically
+   - Check if the source app is in the excluded list (Settings > Privacy)
+   - Ensure the app is running (look for icon in menu bar)
+
+4. **Paste not working**
+   - Grant accessibility permissions if prompted
+   - Try the fallback paste methods (app tries multiple approaches)
+   - Make sure the target app is active before pasting
+
+5. **Google Docs link paste not working**
+   - Ensure you're pasting a URL (starts with http:// or https://)
+   - Verify you're on docs.google.com
+   - Check app-specific behaviors in Settings
 
 ## Contributing
 
