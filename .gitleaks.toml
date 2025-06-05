@@ -1,0 +1,46 @@
+# Gitleaks configuration for detecting secrets in code
+# See: https://github.com/gitleaks/gitleaks
+
+title = "ClipboardHistory Security Configuration"
+
+[extend]
+# Use default rules as base
+useDefault = true
+
+# Additional rules specific to our project
+[[rules]]
+id = "apple-developer-id"
+description = "Apple Developer ID or certificates"
+regex = '''(?i)(developer.*(id|cert|key|sign))'''
+keywords = ["developer", "certificate", "signing"]
+
+[[rules]]
+id = "api-keys"
+description = "Generic API keys"
+regex = '''(?i)(api[_-]?key|apikey)\s*[:=]\s*[\'"]?[a-zA-Z0-9_-]{20,}[\'"]?'''
+keywords = ["api", "key"]
+
+# Allowlist for false positives
+[allowlist]
+description = "Allowlist for acceptable patterns"
+paths = [
+    # Allow test files to have dummy secrets
+    '''.*test.*''',
+    '''.*Test.*''',
+    # Allow documentation examples
+    '''.*README\.md''',
+    '''.*\.md''',
+]
+
+commits = [
+    # Add commit hashes here if they contain acceptable "secrets"
+]
+
+regexes = [
+    # Allow example URLs and dummy data
+    '''example\.com''',
+    '''localhost''',
+    '''127\.0\.0\.1''',
+    # Allow Swift package identifiers
+    '''com\..*\..*''',
+]

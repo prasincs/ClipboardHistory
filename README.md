@@ -195,11 +195,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Security
 
-This app takes security seriously:
-- Passwords from known password managers are automatically masked
-- No data is sent to external servers
-- All clipboard data stays local on your machine
-- Open source for transparency
+This app takes security seriously with comprehensive supply chain protection:
+
+### Data Security
+- **No Network Access**: App doesn't connect to external services
+- **Local Storage Only**: All clipboard data stays on your machine
+- **Password Protection**: Content from password managers is automatically masked
+- **Memory Safety**: Swift's memory safety prevents common vulnerabilities
+
+### Supply Chain Security
+- **Dependency Pinning**: All dependencies pinned to exact versions
+- **Checksum Verification**: Dependencies verified with cryptographic checksums
+- **Minimal Dependencies**: Only one external dependency (HotKey)
+- **Automated Scanning**: CI/CD includes security scanning and secret detection
+- **Regular Audits**: Dependencies regularly reviewed and updated
+
+### Build Security
+- **Reproducible Builds**: Deterministic build process
+- **Security Checks**: Required security validation before releases
+- **Code Review**: All changes require review before merging
+- **Static Analysis**: SwiftLint checks for common security issues
+
+See [SECURITY.md](SECURITY.md) for our complete security policy and vulnerability reporting process.
 
 ## Support
 

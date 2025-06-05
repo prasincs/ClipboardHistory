@@ -1,4 +1,4 @@
-.PHONY: build test clean run release lint install-hooks
+.PHONY: build test clean run release lint install-hooks security verify-deps
 
 # Default target
 all: build
@@ -46,9 +46,25 @@ format:
 # Install git hooks
 install-hooks:
 	@echo "#!/bin/sh" > .git/hooks/pre-commit
+	@echo "make security" >> .git/hooks/pre-commit
 	@echo "make lint" >> .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
-	@echo "Git hooks installed"
+	@echo "Git hooks installed (includes security checks)"
+
+# Verify dependencies
+verify-deps:
+	@chmod +x scripts/verify-dependencies.sh
+	@scripts/verify-dependencies.sh
+
+# Run security checks
+security: verify-deps
+	@echo "Running security checks..."
+	@if command -v gitleaks >/dev/null 2>&1; then \
+		gitleaks detect --config .gitleaks.toml --source . -v; \
+	else \
+		echo "⚠️  Gitleaks not installed. Install with: brew install gitleaks"; \
+	fi
+	@echo "✅ Security checks completed"
 
 # Create a DMG for distribution
 dmg: release
@@ -68,6 +84,8 @@ help:
 	@echo "  make run           - Build and run (debug)"
 	@echo "  make lint          - Run SwiftLint"
 	@echo "  make format        - Format code with swift-format"
+	@echo "  make security      - Run security checks (deps + secrets)"
+	@echo "  make verify-deps   - Verify dependency checksums"
 	@echo "  make install-hooks - Install git pre-commit hooks"
 	@echo "  make dmg           - Create DMG for distribution"
 	@echo "  make help          - Show this help message"

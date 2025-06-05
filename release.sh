@@ -62,6 +62,15 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
+# Run security checks
+echo "Running security checks..."
+if ! make security; then
+    echo "Error: Security checks failed"
+    echo "Please fix security issues before creating a release"
+    exit 1
+fi
+echo "✅ Security checks passed"
+
 # Check if CHANGELOG.md has been updated
 echo "Checking CHANGELOG.md..."
 if ! grep -q "## \[Unreleased\]" CHANGELOG.md; then

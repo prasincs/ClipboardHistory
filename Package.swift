@@ -13,7 +13,8 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/soffes/HotKey", from: "0.2.0")
+        // Pin to exact version to prevent supply chain attacks
+        .package(url: "https://github.com/soffes/HotKey", exact: "0.2.1")
     ],
     targets: [
         .executableTarget(

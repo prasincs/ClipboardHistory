@@ -6,10 +6,38 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
+  security:
+    name: Security Checks
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Verify Dependencies
+      run: |
+        chmod +x scripts/verify-dependencies.sh
+        scripts/verify-dependencies.sh
+    
+    - name: Check for secrets
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+    
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      if: github.event_name == 'pull_request'
+      with:
+        fail-on-severity: moderate
   test:
     name: Test on macOS
     runs-on: macos-latest
+    needs: security
     
     steps:
     - uses: actions/checkout@v4
@@ -29,6 +57,7 @@ jobs:
   release-build:
     name: Release Build
     runs-on: macos-latest
+    needs: security
     
     steps:
     - uses: actions/checkout@v4
@@ -48,6 +77,7 @@ jobs:
   lint:
     name: SwiftLint
     runs-on: macos-latest
+    needs: security
     
     steps:
     - uses: actions/checkout@v4
