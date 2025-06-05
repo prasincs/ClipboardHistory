@@ -2,7 +2,8 @@
 set -e
 
 # Distance-based release script
-# Format: MAJOR.MINOR.PATCH where PATCH increments with each release
+# Format: MAJOR.MINOR.PATCH where PATCH = last_patch + commits_since_last_tag
+# Example: v1.0.4 + 2 commits = v1.0.6
 # This script only creates the tag - CI will handle the actual release
 
 # Get the last tag
@@ -18,9 +19,9 @@ PATCH=$(echo $LAST_TAG | cut -d. -f3)
 DISTANCE=$(git rev-list ${LAST_TAG}..HEAD --count)
 echo "Commits since $LAST_TAG: $DISTANCE"
 
-# If there are new commits, increment the patch version
+# If there are new commits, increment the patch version by the distance
 if [ "$DISTANCE" -gt 0 ]; then
-    NEW_PATCH=$((PATCH + 1))
+    NEW_PATCH=$((PATCH + DISTANCE))
 else
     echo "No new commits since last tag"
     exit 0
