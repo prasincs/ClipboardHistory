@@ -342,8 +342,8 @@ class ClipboardManager: ObservableObject {
         keyUp?.flags = .maskCommand
         
         // Post the events
-        let downResult = keyDown?.post(tap: .cgAnnotatedSessionEventTap)
-        let upResult = keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+        let downResult: Void? = keyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        let upResult: Void? = keyUp?.post(tap: .cgAnnotatedSessionEventTap)
         
         print("ClipboardManager: Key events posted - down: \(String(describing: downResult)), up: \(String(describing: upResult))")
         

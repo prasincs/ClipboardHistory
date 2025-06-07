@@ -21,6 +21,30 @@ let package = Package(
             name: "ClipboardHistory",
             dependencies: ["HotKey"],
             path: ".",
+            exclude: [
+                "LICENSE",
+                "Makefile",
+                "Info.plist",
+                "SECURITY.md",
+                "scripts",
+                "CONTRIBUTING.md",
+                "README.md",
+                "create_icon.py",
+                "create_icon_simple.py",
+                "create_menubar_icon.py",
+                "build.sh",
+                "release.sh",
+                "notarize.sh",
+                "CHANGELOG.md",
+                "CLAUDE.md",
+                "ClipboardHistory.app",
+                ".github",
+                ".gitleaks.toml",
+                "Package.resolved",
+                "AppIcon.svg",
+                "MenuBarIcon.svg",
+                "AppIcon.iconset"
+            ],
             sources: [
                 "ClipboardHistoryApp.swift",
                 "ClipboardManager.swift",
@@ -30,7 +54,8 @@ let package = Package(
                 "HotKeyRecorderView.swift"
             ],
             resources: [
-                .process("Assets.xcassets")
+                .process("Assets.xcassets"),
+                .copy("AppIcon.icns")
             ]
         ),
         .testTarget(
