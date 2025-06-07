@@ -17,6 +17,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for gitleaks
     
     - name: Verify Dependencies
       run: |
@@ -28,6 +30,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      with:
+        config-path: .gitleaks.toml
     
     - name: Dependency Review
       uses: actions/dependency-review-action@v4
