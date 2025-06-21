@@ -97,7 +97,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupPopover() {
         popover = NSPopover()
         popover.contentSize = NSSize(width: 400, height: 500)
-        popover.behavior = .transient
+        popover.behavior = .semitransient // Less aggressive than transient
         popover.contentViewController = NSHostingController(rootView: ClipboardHistoryView(appDelegate: self))
     }
     
@@ -162,6 +162,56 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         targetApplication = NSWorkspace.shared.frontmostApplication
         print("AppDelegate: Stored target application: \(targetApplication?.localizedName ?? "Unknown")")
         
+        // Use cursor positioning if enabled, otherwise use status bar
+        if Settings.shared.showAtCursor {
+            if !showPopoverAtCursor() {
+                showPopoverAtStatusBar()
+            }
+        } else {
+            showPopoverAtStatusBar()
+        }
+    }
+    
+    var anchorWindow: NSWindow?
+    
+    func showPopoverAtCursor() -> Bool {
+        // Clean up any existing anchor window
+        anchorWindow?.close()
+        anchorWindow = nil
+        
+        // Get current mouse location
+        let mouseLocation = NSEvent.mouseLocation
+        
+        // Create a small invisible view as anchor
+        let anchorView = NSView(frame: NSRect(x: 0, y: 0, width: 1, height: 1))
+        
+        // Create a temporary window to hold the anchor view
+        guard NSScreen.main != nil else { return false }
+        
+        let newAnchorWindow = NSWindow(
+            contentRect: NSRect(x: mouseLocation.x, y: mouseLocation.y, width: 1, height: 1),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        
+        newAnchorWindow.backgroundColor = NSColor.clear
+        newAnchorWindow.level = .floating
+        newAnchorWindow.alphaValue = 0
+        newAnchorWindow.contentView = anchorView
+        newAnchorWindow.makeKeyAndOrderFront(nil)
+        
+        // Store reference
+        anchorWindow = newAnchorWindow
+        
+        // Show popover relative to the anchor view
+        popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .maxY)
+        popover.contentViewController?.view.window?.makeKey()
+        
+        return true
+    }
+    
+    func showPopoverAtStatusBar() {
         if let button = statusItem.button {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
@@ -333,6 +383,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: PopoverDelegate {
     func closePopover() {
+        // Close popover first
         popover.performClose(nil)
+        
+        // Clean up anchor window if it exists
+        anchorWindow?.close()
+        anchorWindow = nil
+    }
+    
+    func setStickyMode(_ enabled: Bool) {
+        if enabled {
+            popover.behavior = .applicationDefined // Most persistent
+        } else {
+            popover.behavior = .semitransient
+        }
+    }
+    
+    func bringPopoverToFront() {
+        if popover.isShown {
+            // Make sure the popover window is at the front
+            if let popoverWindow = popover.contentViewController?.view.window {
+                popoverWindow.level = .floating
+                popoverWindow.makeKeyAndOrderFront(nil)
+                
+                // Force focus on the window and activate the app
+                NSApp.activate(ignoringOtherApps: true)
+                popoverWindow.makeKey()
+                
+                // Ensure the window stays on top
+                popoverWindow.orderFrontRegardless()
+            }
+        } else if anchorWindow != nil {
+            // Handle cursor-based popover
+            if let cursorWindow = anchorWindow {
+                cursorWindow.level = .floating
+                cursorWindow.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+                cursorWindow.makeKey()
+                cursorWindow.orderFrontRegardless()
+            }
+        }
     }
 }

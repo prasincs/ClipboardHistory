@@ -106,9 +106,19 @@ class ClipboardManager: ObservableObject {
         }
     }
     
-    func pasteItem(_ item: ClipboardItem, targetApp: NSRunningApplication? = nil) {
-        print("ClipboardManager: Starting paste for item")
+    func pasteItem(_ item: ClipboardItem, targetApp: NSRunningApplication? = nil, directPaste: Bool = false) {
+        print("ClipboardManager: Starting paste for item, directPaste: \(directPaste)")
         
+        if directPaste {
+            // For sticky mode: paste directly without changing clipboard
+            directPasteItem(item, targetApp: targetApp)
+        } else {
+            // Normal mode: use clipboard
+            clipboardPasteItem(item, targetApp: targetApp)
+        }
+    }
+    
+    private func clipboardPasteItem(_ item: ClipboardItem, targetApp: NSRunningApplication? = nil) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         
@@ -138,6 +148,106 @@ class ClipboardManager: ObservableObject {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.simulatePaste(targetApp: targetApp)
+        }
+    }
+    
+    private func directPasteItem(_ item: ClipboardItem, targetApp: NSRunningApplication? = nil) {
+        // For sticky mode: insert text directly without changing clipboard
+        switch item.content {
+        case .text(let string):
+            print("ClipboardManager: Direct pasting text: \(string.prefix(50))...")
+            
+            // First, clear any selection to avoid overwriting
+            clearSelection()
+            
+            // Then, move cursor to the end of current content to avoid overwriting
+            moveCursorToEnd()
+            
+            // Add a space before the new content to separate it
+            let textToInsert = " " + string
+            
+            if insertTextDirectly(textToInsert) {
+                print("ClipboardManager: Direct text insertion successful")
+            } else {
+                print("ClipboardManager: Direct insertion failed, falling back to typing simulation")
+                simulateTyping(textToInsert)
+            }
+        case .image(_):
+            // For images, we still need to use the clipboard
+            print("ClipboardManager: Images require clipboard, using normal paste")
+            clipboardPasteItem(item, targetApp: targetApp)
+        }
+    }
+    
+    private func clearSelection() {
+        // Send right arrow to clear any selection and position cursor at end of selection
+        let source = CGEventSource(stateID: .combinedSessionState)
+        
+        let rightKeyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: true) // Right Arrow
+        rightKeyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        let rightKeyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: false)
+        rightKeyUp?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        // Small delay
+        Thread.sleep(forTimeInterval: 0.05)
+    }
+    
+    private func moveCursorToEnd() {
+        // First try Cmd+End to move to end of document
+        let source = CGEventSource(stateID: .combinedSessionState)
+        
+        // Send Cmd+End first
+        let endKeyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x77, keyDown: true) // End key
+        endKeyDown?.flags = .maskCommand
+        endKeyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        let endKeyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x77, keyDown: false)
+        endKeyUp?.flags = .maskCommand  
+        endKeyUp?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        // Small delay
+        Thread.sleep(forTimeInterval: 0.05)
+        
+        // Then send Cmd+Right Arrow as backup
+        let rightKeyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: true) // Right Arrow
+        rightKeyDown?.flags = .maskCommand
+        rightKeyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        let rightKeyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: false)
+        rightKeyUp?.flags = .maskCommand  
+        rightKeyUp?.post(tap: .cgAnnotatedSessionEventTap)
+        
+        // Longer delay to ensure cursor movement completes
+        Thread.sleep(forTimeInterval: 0.15)
+    }
+    
+    private func simulateTyping(_ text: String) {
+        // Simulate typing the text character by character
+        for char in text {
+            let charString = String(char)
+            let utf16Array = Array(charString.utf16)
+            
+            // Create a key event for this character
+            if let event = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true) {
+                utf16Array.withUnsafeBufferPointer { buffer in
+                    if let ptr = buffer.baseAddress {
+                        event.keyboardSetUnicodeString(stringLength: utf16Array.count, unicodeString: ptr)
+                    }
+                }
+                event.post(tap: .cghidEventTap)
+                
+                let keyUpEvent = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false)
+                utf16Array.withUnsafeBufferPointer { buffer in
+                    if let ptr = buffer.baseAddress {
+                        keyUpEvent?.keyboardSetUnicodeString(stringLength: utf16Array.count, unicodeString: ptr)
+                    }
+                }
+                keyUpEvent?.post(tap: .cghidEventTap)
+                
+                // Small delay between characters
+                Thread.sleep(forTimeInterval: 0.01)
+            }
         }
     }
     
@@ -306,22 +416,44 @@ class ClipboardManager: ObservableObject {
         let result = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
         
         if result == .success, let element = focusedElement {
-            // Try to set the value directly
-            let setResult = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, text as CFTypeRef)
+            // Get the current text content and cursor position
+            var currentValue: CFTypeRef?
+            let valueResult = AXUIElementCopyAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, &currentValue)
             
-            if setResult == .success {
-                return true
-            }
-            
-            // If that fails, try to insert at the selection
             var selectedTextRange: CFTypeRef?
             let rangeResult = AXUIElementCopyAttributeValue(element as! AXUIElement, kAXSelectedTextRangeAttribute as CFString, &selectedTextRange)
             
-            if rangeResult == .success {
-                // Insert text at current position
-                let insertResult = AXUIElementSetAttributeValue(element as! AXUIElement, kAXSelectedTextAttribute as CFString, text as CFTypeRef)
-                return insertResult == .success
+            if valueResult == .success && rangeResult == .success,
+               let currentText = currentValue as? String,
+               let range = selectedTextRange {
+                
+                // Extract the cursor position from the range
+                var location: CFIndex = 0
+                var length: CFIndex = 0
+                
+                if AXValueGetValue(range as! AXValue, .cfRange, &location) == true {
+                    // Insert text at cursor position without replacing selection
+                    let insertionIndex = currentText.index(currentText.startIndex, offsetBy: min(location, currentText.count))
+                    let newText = String(currentText[..<insertionIndex]) + text + String(currentText[insertionIndex...])
+                    
+                    // Set the new text
+                    let setResult = AXUIElementSetAttributeValue(element as! AXUIElement, kAXValueAttribute as CFString, newText as CFTypeRef)
+                    
+                    if setResult == .success {
+                        // Move cursor to after the inserted text
+                        let newCursorPosition = location + text.count
+                        var newRange = CFRange(location: newCursorPosition, length: 0)
+                        if let axRange = AXValueCreate(.cfRange, &newRange) {
+                            AXUIElementSetAttributeValue(element as! AXUIElement, kAXSelectedTextRangeAttribute as CFString, axRange)
+                        }
+                        return true
+                    }
+                }
             }
+            
+            // Fallback: try inserting at selection (this might still replace)
+            let insertResult = AXUIElementSetAttributeValue(element as! AXUIElement, kAXSelectedTextAttribute as CFString, text as CFTypeRef)
+            return insertResult == .success
         }
         
         return false

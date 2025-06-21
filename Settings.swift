@@ -25,6 +25,8 @@ class Settings: ObservableObject {
     @Published var hotKeyCode: UInt16 = 0x09 // 'v' key
     @Published var excludedApps: Set<String> = ["1Password", "1Password 7", "Bitwarden", "LastPass", "Dashlane", "Keeper", "KeePassXC", "Enpass"]
     @Published var maskPasswords: Bool = true
+    @Published var showAtCursor: Bool = false // Experimental feature
+    @Published var stickyModeKey: UInt16 = 0x31 // Space key for sticky mode
     @Published var appPasteBehaviors: [AppPasteBehavior] = [
         AppPasteBehavior(
             appIdentifier: "com.google.Chrome",
@@ -38,6 +40,7 @@ class Settings: ObservableObject {
     private let hotKeyCodeKey = "hotKeyCode"
     private let excludedAppsKey = "excludedApps"
     private let maskPasswordsKey = "maskPasswords"
+    private let showAtCursorKey = "showAtCursor"
     private let appPasteBehaviorsKey = "appPasteBehaviors"
     
     private init() {
@@ -61,6 +64,10 @@ class Settings: ObservableObject {
             maskPasswords = UserDefaults.standard.bool(forKey: maskPasswordsKey)
         }
         
+        if UserDefaults.standard.object(forKey: showAtCursorKey) != nil {
+            showAtCursor = UserDefaults.standard.bool(forKey: showAtCursorKey)
+        }
+        
         if let data = UserDefaults.standard.data(forKey: appPasteBehaviorsKey),
            let behaviors = try? JSONDecoder().decode([AppPasteBehavior].self, from: data) {
             appPasteBehaviors = behaviors
@@ -72,6 +79,7 @@ class Settings: ObservableObject {
         UserDefaults.standard.set(Int(hotKeyCode), forKey: hotKeyCodeKey)
         UserDefaults.standard.set(Array(excludedApps), forKey: excludedAppsKey)
         UserDefaults.standard.set(maskPasswords, forKey: maskPasswordsKey)
+        UserDefaults.standard.set(showAtCursor, forKey: showAtCursorKey)
         
         if let data = try? JSONEncoder().encode(appPasteBehaviors) {
             UserDefaults.standard.set(data, forKey: appPasteBehaviorsKey)

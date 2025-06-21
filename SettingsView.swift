@@ -44,6 +44,11 @@ struct SettingsView: View {
                             settings.saveSettings()
                         }
                     
+                    Toggle("Show clipboard at cursor (Experimental)", isOn: $settings.showAtCursor)
+                        .onChange(of: settings.showAtCursor) { _ in
+                            settings.saveSettings()
+                        }
+                    
                     Text("Excluded Applications")
                         .font(.headline)
                         .padding(.top, 8)

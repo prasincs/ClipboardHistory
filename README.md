@@ -7,13 +7,13 @@
 
 A simple, secure, and customizable clipboard history manager for macOS with automatic password protection.
 
-## What's New (v1.0.9)
+## What's New (v1.0.13)
 
-- **Smart Google Docs Integration**: Automatically convert URLs to clickable links when pasting in Google Docs
-- **App-Specific Paste Behaviors**: Configure custom paste actions for different applications
-- **Improved URL Handling**: URLs are no longer mistakenly identified as passwords
-- **Better First Launch Experience**: Clean menu bar app with helpful onboarding
-- **Enhanced Release Process**: Automated versioning with required changelog updates
+- **🎯 Sticky Mode**: Revolutionary multi-paste workflow - press Space to keep popup open for rapid sequential pasting
+- **⌨️ Enhanced Keyboard Navigation**: Full arrow key navigation with visual selection highlighting  
+- **📌 Cursor-Based Popup**: Optional experimental feature to show clipboard history at cursor location
+- **🚀 Direct Text Insertion**: Smart paste behavior that appends text without overwriting existing content
+- **✨ Improved UX**: Better visual feedback, persistent popups, and keyboard-first design
 
 See [CHANGELOG.md](CHANGELOG.md) for full release history.
 
@@ -27,14 +27,19 @@ See [CHANGELOG.md](CHANGELOG.md) for full release history.
 
 ### Accessibility & Navigation
 - **Customizable Hotkey**: Default is Ctrl+Shift+V, fully customizable in Settings
-- **Search**: Instantly search through clipboard history
-- **Keyboard Navigation**: Press 1-9 to quickly paste items
-- **Visual Feedback**: Items show preview text and source application
+- **Search**: Instantly search through clipboard history  
+- **Full Keyboard Navigation**: Arrow keys to navigate, Enter to paste, numbers 1-9 for quick selection
+- **Sticky Mode**: Press Space to enable persistent popup for rapid multi-pasting workflow
+- **Visual Selection**: Clear highlighting with blue borders shows current selection
+- **Cursor-Based Popup**: Optional experimental feature to show popup at cursor location
+- **Visual Feedback**: Items show preview text, source application, and paste status
 
 ### Smart Paste Features
 - **App-Specific Behaviors**: Configure custom paste behaviors for different applications
 - **Google Docs Integration**: Automatically converts URLs to clickable links when pasting in Google Docs
 - **Context-Aware**: Detects both application and current URL for intelligent paste behavior
+- **Direct Text Insertion**: In sticky mode, text is inserted without changing clipboard or overwriting content
+- **Intelligent Appending**: Automatically positions cursor and adds spacing to prevent content overwriting
 - **Multiple Paste Methods**: Fallback strategies ensure paste works across all applications
 
 ### Privacy & Security
@@ -88,13 +93,29 @@ That's it! The app runs quietly in the background, keeping your clipboard histor
 
 ## Usage
 
+### Basic Navigation
 - **Ctrl+Shift+V** (or custom hotkey): Show clipboard history popup
 - **Left-click menu bar icon**: Show/hide clipboard history
 - **Right-click menu bar icon**: Show menu with Settings and Quit options
+- **↑/↓ Arrow keys**: Navigate through clipboard items
+- **Enter**: Paste currently selected item
 - **Number keys (1-9)**: Quickly paste items 1-9 from history
-- **Enter**: Paste the first/selected item
+- **Escape**: Close popup
 - **Search**: Type to filter clipboard history
 - **Click any item**: Paste that item
+
+### Sticky Mode (Multi-Paste Workflow)
+- **Space**: Toggle sticky mode on/off (shows 📌 indicator when active)
+- **In sticky mode**: Popup stays open after pasting for rapid sequential pasting
+- **Example workflow**: 
+  1. Press Ctrl+Shift+V → popup opens
+  2. Press Space → sticky mode enabled
+  3. Press 2 → pastes item 2, popup stays open
+  4. Press 5 → pastes item 5, popup stays open
+  5. ↓ arrow → navigate to item 3
+  6. Enter → pastes item 3, popup stays open
+  7. Space → disable sticky mode
+  8. Escape → close popup
 
 ## Settings
 
@@ -106,6 +127,7 @@ Access Settings by right-clicking the menu bar icon and selecting "Settings..."
 
 ### Privacy & Security
 - **Mask Passwords**: Toggle automatic password masking on/off
+- **Show clipboard at cursor (Experimental)**: Enable popup to appear at cursor location instead of menu bar
 - **Excluded Applications**: Manage apps whose content will be masked
   - Default includes: 1Password, Bitwarden, LastPass, Dashlane, Keeper, KeePassXC, Enpass
   - Add custom apps by typing the app name
