@@ -45,7 +45,7 @@ public final class HotKey {
 
         guard let keyCombo = keyCombo else { return }
 
-        var hotKeyID = EventHotKeyID(signature: HotKey.signature, id: identifier)
+        let hotKeyID = EventHotKeyID(signature: HotKey.signature, id: identifier)
         var newRef: EventHotKeyRef?
         let status = RegisterEventHotKey(keyCombo.carbonKeyCode,
                                          keyCombo.carbonModifiers,
@@ -101,12 +101,15 @@ private extension HotKey {
             EventTypeSpec(eventClass: UInt32(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))
         ]
 
-        InstallEventHandler(GetEventDispatcherTarget(),
-                            hotKeyEventCallback,
-                            UInt32(eventTypes.count),
-                            &eventTypes,
-                            nil,
-                            &eventHandler)
+        eventTypes.withUnsafeMutableBufferPointer { buffer in
+            guard let baseAddress = buffer.baseAddress else { return }
+            InstallEventHandler(GetEventDispatcherTarget(),
+                                hotKeyEventCallback,
+                                eventTypes.count,
+                                baseAddress,
+                                nil,
+                                &eventHandler)
+        }
     }
 
     static func handle(event eventRef: EventRef?) -> OSStatus {
