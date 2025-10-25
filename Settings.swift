@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import AppKit
 import HotKey
@@ -5,12 +6,12 @@ import HotKey
 enum PasteBehavior: String, CaseIterable, Codable {
     case normal = "Normal Paste"
     case googleDocsLink = "Paste as Link (Cmd+K)"
-    
+
     var description: String {
         return self.rawValue
     }
 }
-
+ 
 struct AppPasteBehavior: Codable {
     let appIdentifier: String
     let appName: String
@@ -179,3 +180,4 @@ class Settings: ObservableObject {
         }
     }
 }
+#endif

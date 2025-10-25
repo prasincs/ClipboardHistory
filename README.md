@@ -212,7 +212,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [HotKey](https://github.com/soffes/HotKey) - For global hotkey support
+- [HotKey](https://github.com/soffes/HotKey) - Inspiration for the vendored global hotkey implementation
 - The Swift community for excellent tools and libraries
 
 ## Security
@@ -226,9 +226,9 @@ This app takes security seriously with comprehensive supply chain protection:
 - **Memory Safety**: Swift's memory safety prevents common vulnerabilities
 
 ### Supply Chain Security
-- **Dependency Pinning**: All dependencies pinned to exact versions
-- **Checksum Verification**: Dependencies verified with cryptographic checksums
-- **Minimal Dependencies**: Only one external dependency (HotKey)
+- **Dependency Pinning**: All dependencies pinned to exact versions (none currently required)
+- **Checksum Verification**: Dependencies verified with cryptographic checksums when present
+- **Minimal Dependencies**: Zero third-party runtime dependencies
 - **Automated Scanning**: CI/CD includes security scanning and secret detection
 - **Regular Audits**: Dependencies regularly reviewed and updated
 

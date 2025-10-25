@@ -58,6 +58,22 @@ jobs:
     - name: Run tests
       run: make test
     
+  test-linux:
+    name: Test on Linux
+    runs-on: ubuntu-22.04
+    container:
+      image: swift:5.9
+    needs: security
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Swift version
+      run: swift --version
+
+    - name: Run tests
+      run: swift test
+
   release-build:
     name: Release Build
     runs-on: macos-latest

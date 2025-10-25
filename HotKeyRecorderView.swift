@@ -1,3 +1,4 @@
+#if os(macOS)
 import SwiftUI
 import AppKit
 
@@ -156,3 +157,4 @@ class HotKeyRecorderNSView: NSView {
         textField.stringValue = modifierString.isEmpty ? "Press your shortcut..." : modifierString
     }
 }
+#endif

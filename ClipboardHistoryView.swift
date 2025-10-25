@@ -1,3 +1,4 @@
+#if os(macOS)
 import SwiftUI
 
 struct ClipboardHistoryView: View {
@@ -367,3 +368,4 @@ struct EmptyStateView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+#endif
