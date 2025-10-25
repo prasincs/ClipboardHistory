@@ -34,7 +34,10 @@ products.append(
 targets.append(
     .target(
         name: "HotKey",
-        path: "Sources/HotKey"
+        path: "Sources/HotKey",
+        linkerSettings: [
+            .linkedFramework("Carbon")
+        ]
     )
 )
 
