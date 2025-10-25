@@ -5,6 +5,10 @@ var products: [Product] = [
     .library(
         name: "ClipboardCore",
         targets: ["ClipboardCore"]
+    ),
+    .executable(
+        name: "ClipboardHistory",
+        targets: ["ClipboardHistory"]
     )
 ]
 
@@ -12,40 +16,18 @@ var targets: [Target] = [
     .target(
         name: "ClipboardCore",
         path: "Sources/ClipboardCore"
-    )
-]
-
-var testTargets: [Target] = [
-    .testTarget(
-        name: "ClipboardCoreTests",
-        dependencies: ["ClipboardCore"],
-        path: "Tests/ClipboardCoreTests"
-    )
-]
-
-#if os(macOS)
-products.append(
-    .executable(
-        name: "ClipboardHistory",
-        targets: ["ClipboardHistory"]
-    )
-)
-
-targets.append(
+    ),
     .target(
         name: "HotKey",
         path: "Sources/HotKey",
         linkerSettings: [
-            .linkedFramework("Carbon")
+            .linkedFramework("Carbon", .when(platforms: [.macOS]))
         ]
-    )
-)
-
-targets.append(
+    ),
     .executableTarget(
         name: "ClipboardHistory",
         dependencies: [
-            "HotKey",
+            .target(name: "HotKey", condition: .when(platforms: [.macOS])),
             "ClipboardCore",
         ],
         path: ".",
@@ -77,15 +59,25 @@ targets.append(
             "ClipboardHistoryView.swift",
             "Settings.swift",
             "SettingsView.swift",
-            "HotKeyRecorderView.swift"
+            "HotKeyRecorderView.swift",
+            "ClipboardHistoryUnsupportedMain.swift"
         ],
         resources: [
             .process("Assets.xcassets"),
             .copy("AppIcon.icns")
         ]
     )
-)
+]
 
+var testTargets: [Target] = [
+    .testTarget(
+        name: "ClipboardCoreTests",
+        dependencies: ["ClipboardCore"],
+        path: "Tests/ClipboardCoreTests"
+    )
+]
+
+#if os(macOS)
 testTargets.append(
     .testTarget(
         name: "ClipboardHistoryTests",

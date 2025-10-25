@@ -1,3 +1,4 @@
+#if os(macOS)
 import AppKit
 import Carbon
 
@@ -140,3 +141,4 @@ private extension HotKey {
 private let hotKeyEventCallback: EventHandlerUPP = { _, eventRef, _ in
     HotKey.handle(event: eventRef)
 }
+#endif

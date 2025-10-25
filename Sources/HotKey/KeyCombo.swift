@@ -1,3 +1,4 @@
+#if os(macOS)
 import AppKit
 import Carbon
 
@@ -15,7 +16,7 @@ public struct KeyCombo: Equatable {
     var carbonKeyCode: UInt32 { key.carbonKeyCode }
     var carbonModifiers: UInt32 { modifiers.carbonFlags }
 }
-
+ 
 extension NSEvent.ModifierFlags {
     var carbonFlags: UInt32 {
         var result: UInt32 = 0
@@ -28,3 +29,5 @@ extension NSEvent.ModifierFlags {
         return result
     }
 }
+#endif
+

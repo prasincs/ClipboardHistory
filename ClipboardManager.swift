@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import AppKit
 import Combine
@@ -638,3 +639,4 @@ enum ClipboardContent: Equatable {
         }
     }
 }
+#endif

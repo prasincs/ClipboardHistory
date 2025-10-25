@@ -1,3 +1,4 @@
+#if os(macOS)
 import SwiftUI
 
 struct SettingsView: View {
@@ -347,14 +348,15 @@ struct AppPasteBehaviorSheet: View {
             urlPattern: requiresURL ? urlPattern : nil,
             behavior: selectedBehavior
         )
-        
+
         // Remove any existing behavior for this app
         settings.appPasteBehaviors.removeAll { $0.appIdentifier == selectedBundleId }
-        
+
         // Add the new behavior
         settings.appPasteBehaviors.append(behavior)
         settings.saveSettings()
-        
+
         isPresented = false
     }
 }
+#endif

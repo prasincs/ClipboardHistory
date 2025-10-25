@@ -1,3 +1,4 @@
+#if os(macOS)
 import AppKit
 
 /// Represents a physical key on the keyboard that can be registered as a global hot key.
@@ -71,8 +72,10 @@ public enum Key: UInt16, CaseIterable {
     case f11 = 0x67
     case f12 = 0x6F
 }
-
+ 
 extension Key {
     /// Carbon expects 32-bit key codes when registering global hot keys.
     var carbonKeyCode: UInt32 { UInt32(rawValue) }
 }
+#endif
+
