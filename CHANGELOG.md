@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Run Swift tests on Linux in CI to cover cross-platform code paths
+- Run Swift tests on Linux in CI using the official Swift container image to cover cross-platform code paths
 
 ### Changed
 - Replaced external HotKey dependency with a vendored implementation to enable offline builds
