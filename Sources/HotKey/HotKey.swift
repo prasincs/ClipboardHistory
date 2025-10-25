@@ -96,18 +96,16 @@ private extension HotKey {
     static func installEventHandler() {
         guard eventHandler == nil else { return }
 
-        var eventTypes = [
+        let eventTypes = [
             EventTypeSpec(eventClass: UInt32(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
             EventTypeSpec(eventClass: UInt32(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))
         ]
 
-        let count = UInt32(eventTypes.count)
-
-        eventTypes.withUnsafeMutableBufferPointer { buffer in
+        eventTypes.withUnsafeBufferPointer { buffer in
             guard let baseAddress = buffer.baseAddress else { return }
             InstallEventHandler(GetEventDispatcherTarget(),
                                 hotKeyEventCallback,
-                                count,
+                                UInt32(buffer.count),
                                 baseAddress,
                                 nil,
                                 &eventHandler)
