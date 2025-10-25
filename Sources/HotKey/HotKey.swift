@@ -101,11 +101,13 @@ private extension HotKey {
             EventTypeSpec(eventClass: UInt32(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))
         ]
 
+        let count = UInt32(eventTypes.count)
+
         eventTypes.withUnsafeMutableBufferPointer { buffer in
             guard let baseAddress = buffer.baseAddress else { return }
             InstallEventHandler(GetEventDispatcherTarget(),
                                 hotKeyEventCallback,
-                                eventTypes.count,
+                                count,
                                 baseAddress,
                                 nil,
                                 &eventHandler)
