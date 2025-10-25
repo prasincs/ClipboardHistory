@@ -1,5 +1,7 @@
+#if os(macOS)
 import XCTest
 @testable import ClipboardHistory
+import ClipboardCore
 
 class ClipboardHistoryTests: XCTestCase {
     
@@ -77,18 +79,16 @@ class ClipboardHistoryTests: XCTestCase {
     }
     
     func testPasswordDetection() {
-        let manager = ClipboardManager.shared
-        
         // Test various password patterns
-        XCTAssertTrue(manager.isLikelyPassword("MyP@ssw0rd123"))
-        XCTAssertTrue(manager.isLikelyPassword("SecurePass#2023"))
-        XCTAssertTrue(manager.isLikelyPassword("xK9$mN2@pL5"))
-        
+        XCTAssertTrue(PasswordHeuristics.isLikelyPassword("MyP@ssw0rd123"))
+        XCTAssertTrue(PasswordHeuristics.isLikelyPassword("SecurePass#2023"))
+        XCTAssertTrue(PasswordHeuristics.isLikelyPassword("xK9$mN2@pL5"))
+
         // Test non-password patterns
-        XCTAssertFalse(manager.isLikelyPassword("hello world"))
-        XCTAssertFalse(manager.isLikelyPassword("simple"))
-        XCTAssertFalse(manager.isLikelyPassword("12345678"))
-        XCTAssertFalse(manager.isLikelyPassword("ALLCAPS"))
+        XCTAssertFalse(PasswordHeuristics.isLikelyPassword("hello world"))
+        XCTAssertFalse(PasswordHeuristics.isLikelyPassword("simple"))
+        XCTAssertFalse(PasswordHeuristics.isLikelyPassword("12345678"))
+        XCTAssertFalse(PasswordHeuristics.isLikelyPassword("ALLCAPS"))
     }
     
     func testExcludedApps() {
@@ -110,3 +110,4 @@ class ClipboardHistoryTests: XCTestCase {
         settings.saveSettings()
     }
 }
+#endif

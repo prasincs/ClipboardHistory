@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/Platform-macOS%2013.0+-blue.svg)](https://www.apple.com/macos)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A simple, secure, and customizable clipboard history manager for macOS with automatic password protection.
+A simple, secure, and customizable clipboard history manager for macOS with automatic password protection. Includes a Rust-based Wayland daemon for Linux/Hyprland environments.
 
 ## What's New (v1.0.13)
 
@@ -72,6 +72,43 @@ make build       # Debug build
 make test        # Run tests
 make clean       # Clean build artifacts
 ```
+
+## Linux (Wayland/Hyprland) Frontend
+
+The repository ships with a Rust-based daemon that brings clipboard history to Wayland compositors such as Hyprland.
+
+### Requirements
+
+- `wl-paste` and `wl-copy` from [wl-clipboard](https://github.com/bugaevc/wl-clipboard)
+- [`wofi`](https://hg.sr.ht/~scoopta/wofi) (for the in-context selection menu)
+- Rust 1.70 or later
+
+### Build
+
+```bash
+cd linux
+cargo build --release
+```
+
+The compiled binary is available at `linux/target/release/clipboard-history-linux`.
+
+### Usage
+
+1. Start the background daemon that records clipboard updates:
+   ```bash
+   ./linux/target/release/clipboard-history-linux daemon &
+   ```
+2. (Hyprland) Add a key binding to launch the selector:
+   ```ini
+   bind=CTRL+SHIFT+V,exec,~/ClipboardHistory/linux/target/release/clipboard-history-linux select
+   ```
+3. Optionally inspect or clear history directly:
+   ```bash
+   ./linux/target/release/clipboard-history-linux print   # Masked list of entries
+   ./linux/target/release/clipboard-history-linux clear   # Remove all stored entries
+   ```
+
+History is stored locally at `$XDG_DATA_HOME/clipboard-history/history.dat` (defaults to `~/.local/share/clipboard-history/`). Password-like entries are masked in the selector but remain available for pasting when chosen.
 
 ## Installation
 
@@ -212,7 +249,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [HotKey](https://github.com/soffes/HotKey) - For global hotkey support
+- [HotKey](https://github.com/soffes/HotKey) - Inspiration for the vendored global hotkey implementation
 - The Swift community for excellent tools and libraries
 
 ## Security
@@ -226,9 +263,9 @@ This app takes security seriously with comprehensive supply chain protection:
 - **Memory Safety**: Swift's memory safety prevents common vulnerabilities
 
 ### Supply Chain Security
-- **Dependency Pinning**: All dependencies pinned to exact versions
-- **Checksum Verification**: Dependencies verified with cryptographic checksums
-- **Minimal Dependencies**: Only one external dependency (HotKey)
+- **Dependency Pinning**: All dependencies pinned to exact versions (none currently required)
+- **Checksum Verification**: Dependencies verified with cryptographic checksums when present
+- **Minimal Dependencies**: Zero third-party runtime dependencies
 - **Automated Scanning**: CI/CD includes security scanning and secret detection
 - **Regular Audits**: Dependencies regularly reviewed and updated
 

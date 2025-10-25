@@ -1,3 +1,4 @@
+#if os(macOS)
 import SwiftUI
 import HotKey
 
@@ -9,7 +10,7 @@ protocol PopoverDelegate: AnyObject {
 struct ClipboardHistoryApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var clipboardManager = ClipboardManager.shared
-    
+
     var body: some Scene {
         WindowGroup {
             EmptyView()
@@ -425,3 +426,4 @@ extension AppDelegate: PopoverDelegate {
         }
     }
 }
+#endif

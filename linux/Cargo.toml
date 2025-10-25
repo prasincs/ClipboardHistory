@@ -1,0 +1,9 @@
+[package]
+name = "clipboard-history-linux"
+version = "0.1.0"
+edition = "2021"
+authors = ["ClipboardHistory Maintainers"]
+description = "Wayland/Hyprland clipboard history service for ClipboardHistory"
+license = "MIT"
+
+[dependencies]

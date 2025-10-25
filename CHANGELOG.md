@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Run Swift tests on Linux in CI using the official Swift container image to cover cross-platform code paths
+- Rust-based Wayland daemon (`clipboard-history-linux`) that records clipboard history and surfaces an Omarchy/Hyprland selector via wofi
+
+### Changed
+- Replaced external HotKey dependency with a vendored implementation to enable offline builds
+
 ## [v1.0.12] - 2025-06-05
 
 ### Security

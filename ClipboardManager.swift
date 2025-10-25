@@ -1,14 +1,16 @@
+#if os(macOS)
 import Foundation
 import AppKit
 import Combine
+import ClipboardCore
 
 class ClipboardManager: ObservableObject {
     static let shared = ClipboardManager()
-    
-    @Published var clipboardHistory: [ClipboardItem] = []
+
+    @Published private(set) var clipboardHistory: [ClipboardItem] = []
     private var lastChangeCount: Int = 0
     private var timer: Timer?
-    private let maxHistoryItems = 50
+    private let historyBuffer = ClipboardHistoryBuffer(maxItemCount: 50)
     
     private init() {}
     
@@ -34,75 +36,42 @@ class ClipboardManager: ObservableObject {
             let isFromExcludedApp = Settings.shared.excludedApps.contains(sourceApp ?? "")
             
             if let string = pasteboard.string(forType: .string), !string.isEmpty {
-                addToHistory(string, sourceApp: sourceApp, isPassword: isFromExcludedApp || isLikelyPassword(string))
+                let isPassword = isFromExcludedApp || PasswordHeuristics.isLikelyPassword(string)
+                addToHistory(string, sourceApp: sourceApp, isPassword: isPassword)
             } else if let image = NSImage(pasteboard: pasteboard) {
                 addImageToHistory(image, sourceApp: sourceApp)
             }
         }
     }
-    
+
     private func getCurrentAppName() -> String? {
         return NSWorkspace.shared.frontmostApplication?.localizedName
     }
-    
-    func isLikelyPassword(_ text: String) -> Bool {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Don't treat URLs as passwords
-        if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
-            return false
-        }
-        
-        // Check if text looks like a password
-        let hasUpperCase = text.range(of: "[A-Z]", options: .regularExpression) != nil
-        let hasLowerCase = text.range(of: "[a-z]", options: .regularExpression) != nil
-        let hasNumber = text.range(of: "[0-9]", options: .regularExpression) != nil
-        let hasSpecialChar = text.range(of: "[^A-Za-z0-9]", options: .regularExpression) != nil
-        let isReasonableLength = text.count >= 8 && text.count <= 128
-        let hasNoSpaces = !text.contains(" ")
-        let hasNoNewlines = !text.contains("\n")
-        
-        // Consider it a password if it has mixed characters and reasonable length
-        let mixedCharCount = [hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter { $0 }.count
-        return isReasonableLength && hasNoSpaces && hasNoNewlines && mixedCharCount >= 3
-    }
-    
+
     private func addToHistory(_ text: String, sourceApp: String? = nil, isPassword: Bool = false) {
-        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty else { return }
-        
-        if let existingIndex = clipboardHistory.firstIndex(where: { 
-            if case .text(let existingText) = $0.content {
-                return existingText == trimmedText
-            }
-            return false
-        }) {
-            clipboardHistory.remove(at: existingIndex)
-        }
-        
-        let newItem = ClipboardItem(content: .text(trimmedText), sourceApp: sourceApp, isPassword: isPassword)
-        clipboardHistory.insert(newItem, at: 0)
-        
-        if clipboardHistory.count > maxHistoryItems {
-            clipboardHistory.removeLast()
+        guard historyBuffer.addText(text, sourceApp: sourceApp, isPassword: isPassword) != nil else { return }
+        refreshHistory()
+    }
+
+    private func addImageToHistory(_ image: NSImage, sourceApp: String? = nil) {
+        guard let data = image.tiffRepresentation,
+              historyBuffer.addImageData(data, sourceApp: sourceApp) != nil else { return }
+        refreshHistory()
+    }
+
+    private func refreshHistory() {
+        clipboardHistory = historyBuffer.items.compactMap { entry in
+            makeClipboardItem(from: entry)
         }
     }
-    
-    private func addImageToHistory(_ image: NSImage, sourceApp: String? = nil) {
-        if let existingIndex = clipboardHistory.firstIndex(where: {
-            if case .image = $0.content {
-                return true
-            }
-            return false
-        }) {
-            clipboardHistory.remove(at: existingIndex)
-        }
-        
-        let newItem = ClipboardItem(content: .image(image), sourceApp: sourceApp)
-        clipboardHistory.insert(newItem, at: 0)
-        
-        if clipboardHistory.count > maxHistoryItems {
-            clipboardHistory.removeLast()
+
+    private func makeClipboardItem(from entry: ClipboardEntry) -> ClipboardItem? {
+        switch entry.content {
+        case .text(let string):
+            return ClipboardItem(entry: entry, content: .text(string))
+        case .imageData(let data):
+            guard let image = NSImage(data: data) else { return nil }
+            return ClipboardItem(entry: entry, content: .image(image))
         }
     }
     
@@ -593,7 +562,7 @@ class ClipboardManager: ObservableObject {
     
     private func performCGEventCmdK() {
         print("ClipboardManager: Trying CGEvent Cmd+K method")
-        
+
         let source = CGEventSource(stateID: .combinedSessionState)
         source?.localEventsSuppressionInterval = 0.0
         
@@ -609,47 +578,47 @@ class ClipboardManager: ObservableObject {
         keyDown?.post(tap: .cgAnnotatedSessionEventTap)
         keyUp?.post(tap: .cgAnnotatedSessionEventTap)
     }
-    
+
     func clearHistory() {
+        historyBuffer.clear()
         clipboardHistory.removeAll()
     }
 }
 
 struct ClipboardItem: Identifiable {
-    let id = UUID()
+    let entry: ClipboardEntry
     let content: ClipboardContent
-    let timestamp = Date()
-    let sourceApp: String?
-    let isPassword: Bool
-    
+
+    var id: UUID { entry.id }
+    var timestamp: Date { entry.timestamp }
+    var sourceApp: String? { entry.sourceApp }
+    var isPassword: Bool { entry.isPassword }
+
+    init(entry: ClipboardEntry, content: ClipboardContent) {
+        self.entry = entry
+        self.content = content
+    }
+
     init(content: ClipboardContent, sourceApp: String? = nil, isPassword: Bool = false) {
         self.content = content
-        self.sourceApp = sourceApp
-        self.isPassword = isPassword
-    }
-    
-    var preview: String {
         switch content {
         case .text(let string):
-            if isPassword && Settings.shared.maskPasswords {
-                return "••••••••"
-            }
-            let lines = string.components(separatedBy: .newlines)
-            let preview = lines.first ?? ""
-            return String(preview.prefix(100))
-        case .image:
-            return "Image"
+            self.entry = ClipboardEntry(content: .text(string), sourceApp: sourceApp, isPassword: isPassword)
+        case .image(let image):
+            let data = image.tiffRepresentation ?? Data()
+            self.entry = ClipboardEntry(content: .imageData(data), sourceApp: sourceApp, isPassword: isPassword)
         }
     }
-    
+
+    var preview: String {
+        entry.preview(maskPasswords: Settings.shared.maskPasswords)
+    }
+
     var maskedContent: ClipboardContent {
-        switch content {
+        switch entry.maskedContent(maskPasswords: Settings.shared.maskPasswords) {
         case .text(let string):
-            if isPassword && Settings.shared.maskPasswords {
-                return .text(String(repeating: "•", count: min(string.count, 20)))
-            }
-            return content
-        case .image:
+            return .text(string)
+        case .imageData:
             return content
         }
     }
@@ -670,3 +639,4 @@ enum ClipboardContent: Equatable {
         }
     }
 }
+#endif
