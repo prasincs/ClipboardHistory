@@ -32,8 +32,7 @@ impl Entry {
             return "••••••••".to_string();
         }
 
-        self
-            .content
+        self.content
             .lines()
             .next()
             .unwrap_or_default()
@@ -73,11 +72,7 @@ impl History {
             return Ok(false);
         }
 
-        if let Some(index) = self
-            .items
-            .iter()
-            .position(|entry| entry.content == trimmed)
-        {
+        if let Some(index) = self.items.iter().position(|entry| entry.content == trimmed) {
             self.items.remove(index);
         }
 

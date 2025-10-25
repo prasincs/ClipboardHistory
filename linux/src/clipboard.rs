@@ -2,9 +2,7 @@ use std::io::{self, Write};
 use std::process::{Command, Stdio};
 
 pub fn read_clipboard() -> io::Result<Option<String>> {
-    let output = Command::new("wl-paste")
-        .arg("--no-newline")
-        .output();
+    let output = Command::new("wl-paste").arg("--no-newline").output();
 
     let output = match output {
         Ok(output) => output,
@@ -33,7 +31,12 @@ pub fn write_clipboard(text: &str) -> io::Result<()> {
     let mut child = Command::new("wl-copy")
         .stdin(Stdio::piped())
         .spawn()
-        .map_err(|err| io::Error::new(io::ErrorKind::NotFound, format!("failed to run wl-copy: {err}")))?;
+        .map_err(|err| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("failed to run wl-copy: {err}"),
+            )
+        })?;
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(text.as_bytes())?;

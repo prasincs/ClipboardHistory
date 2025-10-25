@@ -98,10 +98,11 @@ The compiled binary is available at `linux/target/release/clipboard-history-linu
    ```bash
    ./linux/target/release/clipboard-history-linux daemon &
    ```
-2. (Hyprland) Add a key binding to launch the selector:
+2. (Hyprland) Add a key binding to launch the selector (with optional sticky mode for rapid multi-paste workflows):
    ```ini
-   bind=CTRL+SHIFT+V,exec,~/ClipboardHistory/linux/target/release/clipboard-history-linux select
+   bind=CTRL+SHIFT+V,exec,~/ClipboardHistory/linux/target/release/clipboard-history-linux select --sticky
    ```
+   `--sticky` keeps the selector open after each paste so you can send several entries without re-triggering the shortcut. Omit the flag if you prefer the classic single-paste behavior.
 3. Optionally inspect or clear history directly:
    ```bash
    ./linux/target/release/clipboard-history-linux print   # Masked list of entries
