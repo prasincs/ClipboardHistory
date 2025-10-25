@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Replaced external HotKey dependency with a vendored implementation to enable offline builds
+
 ## [v1.0.12] - 2025-06-05
 
 ### Security

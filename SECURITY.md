@@ -26,10 +26,10 @@ We will respond within 48 hours and work with you to resolve the issue promptly.
 
 ### Supply Chain Security
 
-- **Dependency Pinning**: All dependencies are pinned to exact versions
-- **Dependency Verification**: Checksums are verified for all dependencies
-- **Minimal Dependencies**: We keep dependencies to a minimum (currently only HotKey)
-- **Regular Audits**: Dependencies are regularly reviewed and updated
+- **Dependency Pinning**: All dependencies are pinned to exact versions (none currently required)
+- **Dependency Verification**: Checksums are verified for any future dependencies
+- **Minimal Dependencies**: We keep dependencies to a minimum (currently zero third-party runtime dependencies)
+- **Regular Audits**: Dependency inventory is reviewed before any additions
 
 ### Code Security
 
@@ -52,9 +52,7 @@ We will respond within 48 hours and work with you to resolve the issue promptly.
 
 ## Dependency Information
 
-| Dependency | Version | Purpose | Security Notes |
-|------------|---------|---------|----------------|
-| HotKey | 0.2.1 | Global hotkey support | Minimal, well-maintained library |
+This project does not rely on external runtime dependencies. Any future dependency additions will be documented here with versioning and security notes.
 
 ## Security Best Practices for Contributors
 
