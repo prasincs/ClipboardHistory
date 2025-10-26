@@ -50,6 +50,7 @@ var targets: [Target] = [
             "Package.resolved",
             "AppIcon.svg",
             "MenuBarIcon.svg",
+            "linux",
             "Sources",
             "Tests"
         ],

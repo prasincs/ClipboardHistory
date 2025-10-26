@@ -132,3 +132,6 @@ MenuBarIcon@2x.png
 __pycache__/
 *.py[cod]
 *$py.class
+# Rust
+linux/target/
+

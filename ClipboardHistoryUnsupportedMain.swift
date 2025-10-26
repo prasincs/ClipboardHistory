@@ -4,7 +4,7 @@ import Foundation
 @main
 struct ClipboardHistoryUnsupportedPlatformApp {
     static func main() {
-        fatalError("ClipboardHistory is only supported on macOS.")
+        fatalError("ClipboardHistory's SwiftUI interface is only available on macOS. On Linux, run the clipboard-history-linux daemon from the linux/ directory.")
     }
 }
 #endif
